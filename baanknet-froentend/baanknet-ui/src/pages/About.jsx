@@ -10,23 +10,23 @@ import {
 
 export default function About() {
     return (
-        <main className="min-h-screen bg-slate-50 py-12 sm:py-16">
-            <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <main className="min-h-screen bg-slate-50 py-8 sm:py-16">
+            <div className="mx-auto max-w-5xl px-3 sm:px-6 lg:px-8">
                 {/* Hero Header */}
-                <div className="text-center max-w-3xl mx-auto mb-14">
+                <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
                     <span className="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200/60 px-3 py-1 rounded-full inline-block mb-3">
                         About Bidwallah
                     </span>
-                    <h1 className="mt-2 text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                    <h1 className="mt-2 text-2xl xs:text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
                         Empowering Transparent Bank Auction Real Estate
                     </h1>
-                    <p className="mt-3 text-base text-slate-600 leading-relaxed">
+                    <p className="mt-2.5 sm:mt-3 text-sm sm:text-base text-slate-600 leading-relaxed">
                         Bidwallah is a premier property marketplace that organizes, indexes, and presents verified bank auction properties directly from India's authorized financial institutions.
                     </p>
                 </div>
 
                 {/* Mission Section */}
-                <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-xs mb-10 space-y-6">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-10 shadow-xs mb-8 sm:mb-10 space-y-4 sm:space-y-6">
                     <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <Building2 size={20} className="text-amber-500" />
                         <span>Our Mission</span>
@@ -70,7 +70,7 @@ export default function About() {
                 </div>
 
                 {/* CTA Card */}
-                <div className="rounded-3xl bg-slate-950 text-white p-8 sm:p-10 text-center shadow-xl border border-slate-800 relative overflow-hidden">
+                <div className="rounded-2xl sm:rounded-3xl bg-slate-950 text-white p-6 sm:p-10 text-center shadow-xl border border-slate-800 relative overflow-hidden">
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none"></div>
                     <div className="relative z-10">
                         <h3 className="text-2xl font-black tracking-tight">Ready to find your ideal property?</h3>

@@ -58,22 +58,22 @@
   animation: shimmer 1.5s infinite;
 }
 
-/* Smooth Floating Animations for Hero Visual Elements */
+/* Smooth Floating & Pulse Animations */
 @keyframes floatSlow {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translate3d(0, -10px, 0);
   }
 }
 
 @keyframes floatReverse {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(8px);
+    transform: translate3d(0, 10px, 0);
   }
 }
 
@@ -83,6 +83,15 @@
   }
   50% {
     box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), 0 0 50px rgba(245, 158, 11, 0.2);
+  }
+}
+
+@keyframes pulseEmerald {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2), 0 0 30px rgba(16, 185, 129, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.4), 0 0 50px rgba(16, 185, 129, 0.2);
   }
 }
 
@@ -129,29 +138,19 @@
   }
 }
 
-@keyframes rotateWord {
+@keyframes borderRotate {
   0% {
-    opacity: 0;
-    transform: translateY(20px) rotateX(-20deg);
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
   }
   100% {
-    opacity: 1;
-    transform: translateY(0) rotateX(0deg);
+    background-position: 0% 50%;
   }
 }
 
-.animate-rotate-word {
-  animation: rotateWord 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.perspective-1000 {
-  perspective: 1000px;
-}
-
-.preserve-3d {
-  transform-style: preserve-3d;
-}
-
+/* Luxury & Modern UI Utility Classes */
 .animate-float-slow {
   animation: floatSlow 4s ease-in-out infinite;
 }
@@ -164,6 +163,10 @@
   animation: pulseGlow 3s infinite;
 }
 
+.animate-pulse-emerald {
+  animation: pulseEmerald 3s infinite;
+}
+
 .gold-text-shimmer {
   background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 25%, #fef3c7 50%, #fbbf24 75%, #f59e0b 100%);
   background-size: 200% auto;
@@ -171,6 +174,29 @@
   -webkit-background-clip: text;
   background-clip: text;
   animation: textShimmer 4s ease-in-out infinite;
+}
+
+.card-hover-effect {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(245, 158, 11, 0.06);
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(241, 245, 249, 0.8);
 }
 
 .gold-border-glow {
@@ -193,6 +219,81 @@
 
 .animate-fade-in {
   animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* Smooth Headline Dynamic Word 3D Flip */
+@keyframes rotateWord {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.95);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -1px, 0) scale(1.01);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-rotate-word {
+  display: inline-block;
+  animation: rotateWord 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+/* Smooth Ticker Announcement Fade */
+@keyframes tickerFade {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+.animate-ticker-fade {
+  display: inline-block;
+  animation: tickerFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+/* 3D Coverflow Carousel Stage & Card Utilities */
+.coverflow-stage {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+  contain: layout style;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.coverflow-card {
+  will-change: transform, opacity, filter, box-shadow;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.coverflow-card-dragging {
+  transition: transform 0.08s ease-out, opacity 0.08s ease-out, box-shadow 0.08s ease-out !important;
+}
+
+.coverflow-reflection {
+  -webkit-box-reflect: below 8px linear-gradient(to bottom, transparent 65%, rgba(0, 0, 0, 0.25));
 }
 
 /* Print optimizations for Property Factsheet */

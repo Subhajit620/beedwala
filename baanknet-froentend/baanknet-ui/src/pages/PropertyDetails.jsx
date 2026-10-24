@@ -17,7 +17,7 @@ import {
     ArrowRight
 } from "lucide-react";
 
-import { fetchPropertyById, fetchProperties } from "../services/propertyService";
+import { fetchPropertyById, fetchPropertyRecommendations } from "../services/propertyService";
 import {
     formatINR,
     formatDate,
@@ -26,6 +26,7 @@ import {
 } from "../utils/formatters";
 import PropertyGallery from "../components/PropertyGallery";
 import PropertyCard from "../components/PropertyCard";
+import AuctionCountdown from "../components/AuctionCountdown";
 import EmiCalculator from "../components/EmiCalculator";
 import InquiryModal from "../components/InquiryModal";
 import { LoadingSpinner } from "../components/Loading";
@@ -34,7 +35,7 @@ import { useApp } from "../context/AppContext";
 export default function PropertyDetails() {
     const { id } = useParams();
     const [property, setProperty] = useState(null);
-    const [allProperties, setAllProperties] = useState([]);
+    const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [copied, setCopied] = useState(false);
@@ -52,9 +53,9 @@ export default function PropertyDetails() {
         try {
             setLoading(true);
             setError("");
-            const [propRes, allRes] = await Promise.allSettled([
+            const [propRes, recsRes] = await Promise.allSettled([
                 fetchPropertyById(id),
-                fetchProperties()
+                fetchPropertyRecommendations(id, 3)
             ]);
 
             if (propRes.status === "fulfilled" && propRes.value?.data) {
@@ -63,8 +64,8 @@ export default function PropertyDetails() {
                 setError("Property details not found.");
             }
 
-            if (allRes.status === "fulfilled" && allRes.value?.data) {
-                setAllProperties(allRes.value.data);
+            if (recsRes.status === "fulfilled" && recsRes.value?.data) {
+                setRecommendations(recsRes.value.data);
             }
         } catch (err) {
             console.error("Failed to load property details:", err);
@@ -100,23 +101,6 @@ export default function PropertyDetails() {
     const handlePrint = () => {
         window.print();
     };
-
-    // Find similar properties (same city, bank, or property type)
-    const similarProperties = useMemo(() => {
-        if (!property || !allProperties.length) return [];
-        const currentId = property.sourcePropertyId || property._id;
-        return allProperties
-            .filter((p) => {
-                const pId = p.sourcePropertyId || p._id;
-                if (pId === currentId) return false;
-                return (
-                    p.cityName === property.cityName ||
-                    p.bankName === property.bankName ||
-                    p.propertyType === property.propertyType
-                );
-            })
-            .slice(0, 3);
-    }, [property, allProperties]);
 
     if (loading) {
         return (
@@ -167,8 +151,8 @@ export default function PropertyDetails() {
     const compared = isCompared(propertyId);
 
     return (
-        <main className="min-h-screen bg-slate-50 py-8 sm:py-12">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <main className="min-h-screen bg-slate-50 pt-5 sm:pt-8 pb-28 lg:pb-12">
+            <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
                 {/* Top Action Breadcrumb Bar */}
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <Link
@@ -180,47 +164,50 @@ export default function PropertyDetails() {
                     </Link>
 
                     {/* Action Buttons: Save, Compare, Share, Print */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                         {/* Compare Toggle */}
                         <button
                             onClick={() => toggleCompareProperty(property)}
-                            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                            className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                                 compared
                                     ? "border-amber-500 bg-amber-500 text-slate-950"
                                     : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                             }`}
+                            title={compared ? "Remove from comparison" : "Add to comparison"}
                         >
                             <Scale size={14} />
-                            <span>{compared ? "In Comparison" : "Compare"}</span>
+                            <span className="hidden xs:inline">{compared ? "In Comparison" : "Compare"}</span>
                         </button>
 
                         {/* Save to Watchlist */}
                         <button
                             onClick={() => toggleSaveProperty(property)}
-                            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                            className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                                 saved
                                     ? "border-rose-600 bg-rose-600 text-white"
                                     : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-rose-600"
                             }`}
+                            title={saved ? "Saved in watchlist" : "Save property"}
                         >
                             <Bookmark size={14} className={saved ? "fill-white" : ""} />
-                            <span>{saved ? "Saved" : "Save"}</span>
+                            <span className="hidden xs:inline">{saved ? "Saved" : "Save"}</span>
                         </button>
 
                         {/* Share */}
                         <button
                             onClick={handleShare}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+                            className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition cursor-pointer"
+                            title="Share property link"
                         >
                             {copied ? (
                                 <>
                                     <CheckCircle2 size={14} className="text-emerald-600" />
-                                    <span className="text-emerald-600">Copied!</span>
+                                    <span className="text-emerald-600 hidden xs:inline">Copied!</span>
                                 </>
                             ) : (
                                 <>
                                     <Share2 size={14} className="text-slate-500" />
-                                    <span>Share</span>
+                                    <span className="hidden xs:inline">Share</span>
                                 </>
                             )}
                         </button>
@@ -245,7 +232,7 @@ export default function PropertyDetails() {
                         <PropertyGallery photos={property.photos || []} title={cleanTitle} />
 
                         {/* 2. Main Title Banner */}
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
                             <div className="flex flex-wrap items-center gap-2 mb-3">
                                 {property.propertyType && (
                                     <span className="rounded-xl bg-amber-50 border border-amber-200/60 px-3 py-1 text-xs font-bold text-amber-700">
@@ -275,33 +262,36 @@ export default function PropertyDetails() {
                                 )}
                             </div>
 
-                            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
+                            <h1 className="text-xl sm:text-3xl font-black text-slate-900 leading-snug">
                                 {cleanTitle}
                             </h1>
 
                             {/* Full Property Description */}
                             {property.propertyTitle && (
-                                <div className="mt-5 pt-4 border-t border-slate-100">
+                                <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-slate-100">
                                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                                         Official Bank Auction Property Notice
                                     </h4>
-                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                                         {property.propertyTitle}
                                     </p>
                                 </div>
                             )}
                         </div>
 
+                        {/* Interactive Auction Countdown & Calendar Sync Engine */}
+                        <AuctionCountdown property={property} variant="full" />
+
                         {/* 3. Property Information Grid */}
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-                            <h3 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-4 sm:mb-5 flex items-center gap-2">
                                 <Building2 size={18} className="text-amber-500" />
                                 <span>Property Specifications</span>
                             </h3>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs sm:text-sm">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                                 {property.area ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Super Area</span>
                                         <span className="font-bold text-slate-800">
                                             {property.area} {property.unitOfMeasurement || "sq.ft"}
@@ -310,35 +300,35 @@ export default function PropertyDetails() {
                                 ) : null}
 
                                 {property.unitOfMeasurement ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Unit of Measurement</span>
                                         <span className="font-bold text-slate-800">{property.unitOfMeasurement}</span>
                                     </div>
                                 ) : null}
 
                                 {property.propertyPossessionType ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Possession Type</span>
                                         <span className="font-bold text-slate-800">{property.propertyPossessionType}</span>
                                     </div>
                                 ) : null}
 
                                 {property.propertyOwnershipType ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Ownership Type</span>
                                         <span className="font-bold text-slate-800">{property.propertyOwnershipType}</span>
                                     </div>
                                 ) : null}
 
                                 {property.facing ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Facing</span>
                                         <span className="font-bold text-slate-800">{property.facing}</span>
                                     </div>
                                 ) : null}
 
                                 {pricePerSqFt ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Estimated Rate</span>
                                         <span className="font-bold text-amber-600">{pricePerSqFt}</span>
                                     </div>
@@ -347,43 +337,43 @@ export default function PropertyDetails() {
                         </div>
 
                         {/* 4. Location & Jurisdiction Details */}
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-                            <h3 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-4 sm:mb-5 flex items-center gap-2">
                                 <MapPin size={18} className="text-amber-500" />
                                 <span>Location & Legal Jurisdiction</span>
                             </h3>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs sm:text-sm">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                                 {property.cityName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">City</span>
                                         <span className="font-bold text-slate-800">{property.cityName}</span>
                                     </div>
                                 ) : null}
 
                                 {property.districtName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">District</span>
                                         <span className="font-bold text-slate-800">{property.districtName}</span>
                                     </div>
                                 ) : null}
 
                                 {property.stateName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">State</span>
                                         <span className="font-bold text-slate-800">{property.stateName}</span>
                                     </div>
                                 ) : null}
 
                                 {property.pincode ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Postal Pincode</span>
                                         <span className="font-mono font-bold text-slate-800">{property.pincode}</span>
                                     </div>
                                 ) : null}
 
                                 {property.locality ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Locality</span>
                                         <span className="font-bold text-slate-800">{property.locality}</span>
                                     </div>
@@ -392,55 +382,55 @@ export default function PropertyDetails() {
                         </div>
 
                         {/* 5. Bank & Institution Branch Information */}
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-                            <h3 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-4 sm:mb-5 flex items-center gap-2">
                                 <Landmark size={18} className="text-amber-500" />
                                 <span>Authorised Banking Institution</span>
                             </h3>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                                 {property.bankName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 sm:col-span-2 flex items-center justify-between">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100 sm:col-span-2 flex items-center justify-between">
                                         <div>
                                             <span className="text-slate-400 text-xs block mb-1">Authorized Bank</span>
-                                            <span className="font-bold text-slate-900 text-base">{property.bankName}</span>
+                                            <span className="font-bold text-slate-900 text-sm sm:text-base">{property.bankName}</span>
                                         </div>
-                                        <div className="h-10 w-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/50 flex items-center justify-center">
-                                            <Landmark size={20} />
+                                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/50 flex items-center justify-center shrink-0">
+                                            <Landmark size={18} />
                                         </div>
                                     </div>
                                 ) : null}
 
                                 {property.bankAddress ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 sm:col-span-2">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100 sm:col-span-2">
                                         <span className="text-slate-400 text-xs block mb-1">Branch Dealing Address</span>
                                         <span className="font-medium text-slate-700 leading-relaxed">{property.bankAddress}</span>
                                     </div>
                                 ) : null}
 
                                 {property.departmentName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Department</span>
                                         <span className="font-semibold text-slate-800">{property.departmentName}</span>
                                     </div>
                                 ) : null}
 
                                 {property.regionalOfficeName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Regional Office</span>
                                         <span className="font-semibold text-slate-800">{property.regionalOfficeName}</span>
                                     </div>
                                 ) : null}
 
                                 {property.zonalOfficeName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Zonal Office</span>
                                         <span className="font-semibold text-slate-800">{property.zonalOfficeName}</span>
                                     </div>
                                 ) : null}
 
                                 {property.headOfficeName ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Head Office</span>
                                         <span className="font-semibold text-slate-800">{property.headOfficeName}</span>
                                     </div>
@@ -449,29 +439,29 @@ export default function PropertyDetails() {
                         </div>
 
                         {/* 6. Auction Legal Action Details */}
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-                            <h3 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-4 sm:mb-5 flex items-center gap-2">
                                 <FileCheck2 size={18} className="text-amber-500" />
                                 <span>Statutory Auction Notice Record</span>
                             </h3>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs sm:text-sm">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                                 {property.propTypeOfAction ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Enforcement Action</span>
                                         <span className="font-bold text-amber-600">{property.propTypeOfAction}</span>
                                     </div>
                                 ) : null}
 
                                 {createdDate ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Notice Publication Date</span>
                                         <span className="font-semibold text-slate-800">{createdDate}</span>
                                     </div>
                                 ) : null}
 
                                 {property.isActive !== undefined ? (
-                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100 xs:col-span-2 lg:col-span-1">
                                         <span className="text-slate-400 text-xs block mb-1">Verification Status</span>
                                         <span className="font-bold text-emerald-600">
                                             {property.isActive ? "100% Authorized Listing" : "Archived"}
@@ -513,6 +503,9 @@ export default function PropertyDetails() {
                                     </span>
                                 </div>
                             )}
+
+                            {/* Sticky Compact Auction Countdown */}
+                            <AuctionCountdown property={property} variant="compact" />
 
                             {/* Key Highlights List */}
                             <div className="space-y-2.5 pt-2 text-xs text-slate-600">
@@ -572,30 +565,40 @@ export default function PropertyDetails() {
                     </div>
                 </div>
 
-                {/* Similar Properties Showcase */}
-                {similarProperties.length > 0 && (
+                {/* Recommended Similar Properties Showcase */}
+                {recommendations.length > 0 && (
                     <section className="mt-16 sm:mt-20 pt-12 border-t border-slate-200">
                         <div className="flex items-center justify-between mb-8">
                             <div>
                                 <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
-                                    Related Deals
+                                    Algorithmic Discovery
                                 </span>
                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-                                    Similar Bank Properties in Region
+                                    Recommended Similar Auction Assets
                                 </h3>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Matched by category ({property.propertySubType || property.propertyType}) and comparable valuation bracket.
+                                </p>
                             </div>
                             <Link
-                                to="/properties"
+                                to={`/properties?subType=${encodeURIComponent(property.propertySubType || "")}`}
                                 className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 transition"
                             >
-                                <span>View All</span>
+                                <span>View Category</span>
                                 <ArrowRight size={14} />
                             </Link>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {similarProperties.map((p) => (
-                                <PropertyCard key={p.sourcePropertyId || p._id} property={p} />
+                            {recommendations.map((p) => (
+                                <div key={p.sourcePropertyId || p._id} className="flex flex-col">
+                                    {p.recommendationReason && (
+                                        <div className="mb-2 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/80 inline-flex items-center gap-1 self-start">
+                                            <span>✨ {p.recommendationReason}</span>
+                                        </div>
+                                    )}
+                                    <PropertyCard property={p} />
+                                </div>
                             ))}
                         </div>
                     </section>
@@ -608,6 +611,28 @@ export default function PropertyDetails() {
                 isOpen={inquiryOpen}
                 onClose={() => setInquiryOpen(false)}
             />
+
+            {/* Mobile Sticky Bottom Inquiry / Price Bar */}
+            <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 py-3 shadow-lg lg:hidden">
+                <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
+                    <div className="min-w-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 block">
+                            Reserve Price
+                        </span>
+                        <div className="text-base xs:text-lg font-black text-slate-900 truncate">
+                            {formatINR(property.propertyPrice)}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setInquiryOpen(true)}
+                        className="shrink-0 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 active:scale-95 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md shadow-amber-500/20 transition cursor-pointer"
+                    >
+                        <Phone size={14} />
+                        <span>Contact Bank Desk</span>
+                    </button>
+                </div>
+            </div>
         </main>
     );
 }

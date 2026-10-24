@@ -18,11 +18,11 @@ export default function CompareModal() {
     return (
         <>
             {/* Floating Bottom Comparison Dock */}
-            <aside aria-label="Compare properties dock" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-2xl">
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-slate-950/95 p-3 sm:px-5 text-white shadow-2xl backdrop-blur-md">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-600 text-white shrink-0">
-                            <Scale size={18} />
+            <aside aria-label="Compare properties dock" className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[95%] sm:w-[94%] max-w-2xl">
+                <div className="flex items-center justify-between gap-2 sm:gap-3 rounded-2xl border border-amber-500/30 bg-slate-950/95 p-2.5 sm:p-3 sm:px-5 text-white shadow-2xl backdrop-blur-md">
+                    <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                        <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-amber-600 text-white shrink-0">
+                            <Scale size={16} />
                         </div>
                         <div className="hidden sm:block">
                             <span className="text-xs font-bold block text-amber-300">
@@ -34,14 +34,14 @@ export default function CompareModal() {
                         </div>
 
                         {/* Property Thumbnails */}
-                        <div className="flex items-center gap-1.5 pl-2">
+                        <div className="hidden xs:flex items-center gap-1.5 pl-1 sm:pl-2 shrink-0">
                             {comparedProperties.map((p) => {
                                 const id = p.sourcePropertyId || p._id;
                                 const photo = p.photos && p.photos.length > 0 ? p.photos[0] : null;
                                 return (
                                     <div
                                         key={id}
-                                        className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-700 bg-slate-800 shrink-0 group"
+                                        className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-lg overflow-hidden border border-slate-700 bg-slate-800 shrink-0 group"
                                     >
                                         {photo ? (
                                             <img
@@ -67,16 +67,16 @@ export default function CompareModal() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         <button
                             onClick={clearCompare}
-                            className="rounded-xl px-2.5 py-1.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                            className="rounded-xl px-2 py-1.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                         >
                             Clear
                         </button>
                         <button
                             onClick={() => setIsCompareModalOpen(true)}
-                            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 px-4 py-2 text-xs font-bold text-white shadow-md shadow-amber-600/30 transition cursor-pointer"
+                            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 px-3 sm:px-4 py-2 text-xs font-bold text-white shadow-md shadow-amber-600/30 transition cursor-pointer"
                         >
                             <span>Compare ({comparedProperties.length})</span>
                             <ArrowRight size={13} />
@@ -87,15 +87,15 @@ export default function CompareModal() {
 
             {/* Full Comparison Matrix Modal */}
             {isCompareModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 overflow-hidden">
                     <div
                         className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs"
                         onClick={() => setIsCompareModalOpen(false)}
                     ></div>
 
-                    <div className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-10 animate-scale-up">
+                    <div className="relative w-full max-w-5xl max-h-[92vh] sm:max-h-[90vh] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-10 animate-scale-up">
                         {/* Modal Header */}
-                        <div className="p-5 sm:p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+                        <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
                             <div className="flex items-center gap-2.5">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-600 text-white">
                                     <Scale size={18} />

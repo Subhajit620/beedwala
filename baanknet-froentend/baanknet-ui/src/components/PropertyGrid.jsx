@@ -1,9 +1,23 @@
 import React from "react";
 import PropertyCard from "./PropertyCard";
 
-export default function PropertyGrid({ properties = [], columns = 3 }) {
+export default function PropertyGrid({ properties = [], columns = 3, viewMode = "grid" }) {
     if (!properties || properties.length === 0) {
         return null;
+    }
+
+    if (viewMode === "list") {
+        return (
+            <div className="flex flex-col gap-4 sm:gap-5">
+                {properties.map((property) => (
+                    <PropertyCard
+                        key={property.sourcePropertyId || property._id || property.propertyUniqueId}
+                        property={property}
+                        viewMode="list"
+                    />
+                ))}
+            </div>
+        );
     }
 
     const gridClass =
@@ -17,6 +31,7 @@ export default function PropertyGrid({ properties = [], columns = 3 }) {
                 <PropertyCard
                     key={property.sourcePropertyId || property._id || property.propertyUniqueId}
                     property={property}
+                    viewMode="grid"
                 />
             ))}
         </div>

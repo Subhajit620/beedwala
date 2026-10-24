@@ -79,27 +79,27 @@ export default function AuctionRoadmap() {
     ];
 
     return (
-        <section className="py-16 sm:py-20 bg-slate-950 text-white rounded-3xl overflow-hidden my-12 border border-slate-800 shadow-2xl relative">
+        <section className="py-12 sm:py-20 bg-slate-950 text-white rounded-2xl sm:rounded-3xl overflow-hidden my-8 sm:my-12 border border-slate-800 shadow-2xl relative">
             {/* Background Ambient Glows */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-amber-500/12 via-slate-950 to-slate-950 pointer-events-none"></div>
 
-            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="relative mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="text-center max-w-3xl mx-auto mb-14">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-1.5 text-xs font-bold text-amber-400 border border-amber-500/30 mb-3 backdrop-blur-md">
+                <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3.5 sm:px-4 py-1.5 text-xs font-bold text-amber-400 border border-amber-500/30 mb-3 backdrop-blur-md">
                         <ShieldCheck size={14} />
                         <span>Statutory SARFAESI Act 2002 Framework</span>
                     </div>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
+                    <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
                         How Bidwallah Bank Auctions Work
                     </h2>
-                    <p className="mt-3 text-sm sm:text-base text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed">
+                    <p className="mt-2.5 sm:mt-3 text-xs sm:text-base text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed">
                         A transparent, legally secured 5-step roadmap from initial notice discovery to 100% clean title deed possession.
                     </p>
                 </div>
 
                 {/* Step Selector Tabs with Glow */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mb-6 sm:mb-8">
                     {steps.map((step, idx) => {
                         const Icon = step.icon;
                         const isActive = activeStep === idx;
@@ -108,17 +108,19 @@ export default function AuctionRoadmap() {
                                 key={idx}
                                 type="button"
                                 onClick={() => setActiveStep(idx)}
-                                className={`flex flex-col items-start p-4.5 rounded-2xl border transition-all duration-300 text-left cursor-pointer relative overflow-hidden ${
+                                className={`flex flex-col items-start p-3 sm:p-4.5 rounded-xl sm:rounded-2xl border transition-all duration-300 text-left cursor-pointer relative overflow-hidden ${
+                                    idx === 4 ? "col-span-2 sm:col-span-1" : "col-span-1"
+                                } ${
                                     isActive
                                         ? "bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 border-amber-400 text-slate-950 font-black shadow-xl shadow-amber-500/25 scale-[1.02]"
                                         : "bg-slate-900/90 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-amber-300"
                                 }`}
                             >
-                                <div className="flex items-center justify-between w-full mb-2.5">
-                                    <span className={`text-[11px] font-mono font-black ${isActive ? "text-slate-950 bg-amber-300 px-2 py-0.5 rounded-md" : "text-slate-500"}`}>
+                                <div className="flex items-center justify-between w-full mb-2 sm:mb-2.5">
+                                    <span className={`text-[10px] sm:text-[11px] font-mono font-black ${isActive ? "text-slate-950 bg-amber-300 px-1.5 sm:px-2 py-0.5 rounded-md" : "text-slate-500"}`}>
                                         STEP {step.number}
                                     </span>
-                                    <Icon size={18} className={isActive ? "text-slate-950" : "text-slate-400"} />
+                                    <Icon size={16} className={`shrink-0 ${isActive ? "text-slate-950" : "text-slate-400"}`} />
                                 </div>
                                 <span className={`text-xs sm:text-sm font-black line-clamp-1 ${isActive ? "text-slate-950" : "text-slate-200"}`}>
                                     {step.title}
@@ -129,11 +131,11 @@ export default function AuctionRoadmap() {
                 </div>
 
                 {/* Active Step Deep Dive Card */}
-                <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-6 sm:p-9 backdrop-blur-2xl shadow-2xl">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                        <div className="lg:col-span-8 space-y-4">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-800 bg-slate-900/90 p-4 sm:p-9 backdrop-blur-2xl shadow-2xl">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
+                        <div className="lg:col-span-8 space-y-3.5 sm:space-y-4">
                             <div className="flex items-center gap-2.5">
-                                <span className="rounded-xl bg-amber-500/20 border border-amber-400/40 px-3 py-1 text-xs font-bold text-amber-300">
+                                <span className="rounded-xl bg-amber-500/20 border border-amber-400/40 px-2.5 sm:px-3 py-1 text-xs font-bold text-amber-300">
                                     {steps[activeStep].tag}
                                 </span>
                                 <span className="text-xs font-mono text-slate-400">
@@ -166,7 +168,7 @@ export default function AuctionRoadmap() {
                         </div>
 
                         {/* Interactive Stage Callout Box */}
-                        <div className="lg:col-span-4 flex flex-col justify-center items-center p-7 rounded-3xl bg-slate-950 border border-amber-500/30 text-center shadow-xl relative overflow-hidden">
+                        <div className="lg:col-span-4 flex flex-col justify-center items-center p-5 sm:p-7 rounded-2xl sm:rounded-3xl bg-slate-950 border border-amber-500/30 text-center shadow-xl relative overflow-hidden">
                             <div className="absolute -right-8 -top-8 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
 
                             <div className="text-5xl font-black text-amber-500 mb-1">

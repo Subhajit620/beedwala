@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Mail, MapPin, Sparkles, Landmark } from "lucide-react";
+import { ShieldCheck, Mail, MapPin, Sparkles, Landmark, Shield } from "lucide-react";
 import logoImg from "../assets/logo.jpg";
 
 export default function Footer() {
@@ -59,6 +59,12 @@ export default function Footer() {
                                     Contact & Banking Desk
                                 </Link>
                             </li>
+                            <li>
+                                <Link to="/admin" className="hover:text-amber-400 text-slate-400 flex items-center gap-1.5 transition">
+                                    <Shield size={13} className="text-amber-500" />
+                                    <span>Admin Console</span>
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
@@ -85,11 +91,18 @@ export default function Footer() {
                 </div>
 
                 {/* Copyright & Disclaimer */}
-                <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+                <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 text-center sm:text-left">
                     <p>© 2026 Bidwallah. All rights reserved.</p>
-                    <p>
-                        All auction notices are synchronized directly from authorized public bank auction records.
-                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+                        <Link to="/admin" className="text-slate-500 hover:text-amber-400 transition flex items-center gap-1">
+                            <Shield size={12} />
+                            <span>Administrator Gateway</span>
+                        </Link>
+                        <span className="hidden sm:inline">•</span>
+                        <p>
+                            All auction notices synchronized from authorized public records.
+                        </p>
+                    </div>
                 </div>
             </div>
         </footer>

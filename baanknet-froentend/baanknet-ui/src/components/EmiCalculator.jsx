@@ -47,7 +47,7 @@ export default function EmiCalculator({ defaultPrice = 2500000 }) {
     };
 
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-8 shadow-xs">
             {/* Header */}
             <div className="flex items-center justify-between gap-3 mb-6">
                 <div className="flex items-center gap-2.5">
@@ -95,7 +95,7 @@ export default function EmiCalculator({ defaultPrice = 2500000 }) {
                         />
 
                         {/* Quick Presets */}
-                        <div className="flex items-center gap-1.5 pt-1">
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
                             <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Presets:</span>
                             {[70, 80, 90].map((pct) => (
                                 <button
@@ -170,12 +170,12 @@ export default function EmiCalculator({ defaultPrice = 2500000 }) {
                 </div>
 
                 {/* Calculation Summary Card (5 cols) */}
-                <div className="lg:col-span-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 text-white shadow-xl flex flex-col justify-between border border-slate-800">
+                <div className="lg:col-span-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 sm:p-6 text-white shadow-xl flex flex-col justify-between border border-slate-800">
                     <div>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
                             Estimated Monthly Instalment
                         </span>
-                        <div className="mt-1 text-3xl sm:text-4xl font-black text-white">
+                        <div className="mt-1 text-2xl xs:text-3xl sm:text-4xl font-black text-white">
                             {formatINR(calculation.monthlyEmi)}
                             <span className="text-xs font-semibold text-slate-400"> / month</span>
                         </div>

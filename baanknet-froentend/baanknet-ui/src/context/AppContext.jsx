@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 
 const AppContext = createContext();
 
@@ -74,19 +74,23 @@ export function AppProvider({ children }) {
 
     // 3. Global Toast Notifications
     const [toasts, setToasts] = useState([]);
+    const toastSeqRef = useRef(0); // stable incrementing ids (no randomness)
 
-    const addToast = (message, type = "info") => {
-        const id = `toast_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    // Memoized so their identity never changes: pages use addToast inside useCallback/useEffect
+    // dependencies, and a new function on every render would re-trigger those effects endlessly.
+    const removeToast = useCallback((id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, []);
+
+    const addToast = useCallback((message, type = "info") => {
+        toastSeqRef.current += 1;
+        const id = `toast_${toastSeqRef.current}`;
         setToasts((prev) => [...prev, { id, message, type }]);
 
         setTimeout(() => {
             removeToast(id);
         }, 4000);
-    };
-
-    const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
+    }, [removeToast]);
 
     return (
         <AppContext.Provider

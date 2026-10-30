@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Landmark, Sparkles } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 
 export default function BankPartnersMarquee() {
     const navigate = useNavigate();

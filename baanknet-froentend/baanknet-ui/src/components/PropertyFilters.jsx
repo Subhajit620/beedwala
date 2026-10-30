@@ -6,11 +6,7 @@ import {
     SlidersHorizontal,
     ArrowUpDown,
     IndianRupee,
-    X,
-    MapPin,
-    ShieldCheck,
-    Building2,
-    Landmark
+    X
 } from "lucide-react";
 import { formatINR } from "../utils/formatters";
 
@@ -19,8 +15,6 @@ export default function PropertyFilters({
     onChange,
     onReset,
     facets = null,
-    states = [],
-    cities = [],
     types = [],
     subTypes = [],
     banks = [],

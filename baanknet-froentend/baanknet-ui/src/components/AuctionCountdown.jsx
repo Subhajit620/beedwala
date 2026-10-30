@@ -5,13 +5,7 @@ import {
     Download,
     ExternalLink,
     AlertTriangle,
-    CheckCircle2,
-    ShieldAlert,
-    HelpCircle,
-    ChevronRight,
-    IndianRupee,
-    FileSpreadsheet,
-    Eye
+    ShieldAlert
 } from "lucide-react";
 import {
     getAuctionSchedule,
@@ -20,44 +14,45 @@ import {
 } from "../utils/auctionScheduler";
 import { formatINR } from "../utils/formatters";
 
+const PASSED = { days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true };
+
+// Remaining time until the auction (pure helper — "now" is passed in)
+function computeTimeLeft(schedule, now) {
+    if (!schedule) return PASSED;
+    const diff = schedule.auctionDate.getTime() - now;
+    if (diff <= 0) return PASSED;
+    return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+        isPassed: false
+    };
+}
+
 export default function AuctionCountdown({ property, variant = "full" }) {
     const schedule = useMemo(() => getAuctionSchedule(property), [property]);
 
     // Live ticker calculation
-    const [timeLeft, setTimeLeft] = useState(() => {
-        if (!schedule) return { days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true };
-        const diff = schedule.auctionDate.getTime() - Date.now();
-        if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true };
+    const [timeLeft, setTimeLeft] = useState(() => computeTimeLeft(schedule, Date.now()));
 
-        return {
-            days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-            hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-            minutes: Math.floor((diff / 1000 / 60) % 60),
-            seconds: Math.floor((diff / 1000) % 60),
-            isPassed: false
-        };
-    });
-
+    // Tick every second for the current schedule. The first tick runs immediately, so switching
+    // to another property never shows the previous property's countdown. Stops once the time has passed.
     useEffect(() => {
-        if (!schedule || timeLeft.isPassed) return;
+        if (!schedule) return;
+        let interval;
+        const tick = () => {
+            const next = computeTimeLeft(schedule, Date.now());
+            setTimeLeft(next);
+            if (next.isPassed) clearInterval(interval);
+        };
+        const first = setTimeout(tick, 0);
+        interval = setInterval(tick, 1000);
 
-        const interval = setInterval(() => {
-            const diff = schedule.auctionDate.getTime() - Date.now();
-            if (diff <= 0) {
-                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true });
-                clearInterval(interval);
-            } else {
-                setTimeLeft({
-                    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-                    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-                    minutes: Math.floor((diff / 1000 / 60) % 60),
-                    seconds: Math.floor((diff / 1000) % 60),
-                    isPassed: false
-                });
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
+        return () => {
+            clearTimeout(first);
+            clearInterval(interval);
+        };
     }, [schedule]);
 
     if (!property || !schedule) return null;

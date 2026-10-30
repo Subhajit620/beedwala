@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
     ArrowLeft,
@@ -14,7 +14,9 @@ import {
     Bookmark,
     Scale,
     Printer,
-    ArrowRight
+    ArrowRight,
+    Navigation,
+    ExternalLink
 } from "lucide-react";
 
 import { fetchPropertyById, fetchPropertyRecommendations } from "../services/propertyService";
@@ -25,9 +27,9 @@ import {
     getCleanPropertyTitle
 } from "../utils/formatters";
 import PropertyGallery from "../components/PropertyGallery";
+import PropertyVideos from "../components/PropertyVideos";
 import PropertyCard from "../components/PropertyCard";
 import AuctionCountdown from "../components/AuctionCountdown";
-import EmiCalculator from "../components/EmiCalculator";
 import InquiryModal from "../components/InquiryModal";
 import { LoadingSpinner } from "../components/Loading";
 import { useApp } from "../context/AppContext";
@@ -226,10 +228,17 @@ export default function PropertyDetails() {
 
                 {/* Main 12-col Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Left Column (8 cols): Gallery, Specs, Bank Info, EMI Calculator */}
+                    {/* Left Column (8 cols): Gallery, Specs, Bank Info */}
                     <div className="lg:col-span-8 space-y-8">
                         {/* 1. Image Gallery */}
-                        <PropertyGallery photos={property.photos || []} title={cleanTitle} />
+                        <PropertyGallery
+                            photos={
+                                property.photos && property.photos.length > 0
+                                    ? property.photos
+                                    : (property.displayImage ? [property.displayImage] : [])
+                            }
+                            title={cleanTitle}
+                        />
 
                         {/* 2. Main Title Banner */}
                         <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
@@ -266,14 +275,14 @@ export default function PropertyDetails() {
                                 {cleanTitle}
                             </h1>
 
-                            {/* Full Property Description */}
-                            {property.propertyTitle && (
+                            {/* Full Property Description / Notes */}
+                            {(property.propertyDescription || property.propertyTitle) && (
                                 <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-slate-100">
                                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                                        Official Bank Auction Property Notice
+                                        Property Details & Auction Notice
                                     </h4>
-                                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                                        {property.propertyTitle}
+                                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                                        {property.propertyDescription || property.propertyTitle}
                                     </p>
                                 </div>
                             )}
@@ -336,6 +345,9 @@ export default function PropertyDetails() {
                             </div>
                         </div>
 
+                        {/* Property Videos (only rendered when the listing has videos) */}
+                        <PropertyVideos videos={property.videos} />
+
                         {/* 4. Location & Jurisdiction Details */}
                         <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
                             <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-4 sm:mb-5 flex items-center gap-2">
@@ -376,6 +388,39 @@ export default function PropertyDetails() {
                                     <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
                                         <span className="text-slate-400 text-xs block mb-1">Locality</span>
                                         <span className="font-bold text-slate-800">{property.locality}</span>
+                                    </div>
+                                ) : null}
+
+                                {property.latitude && property.longitude ? (
+                                    <div className="rounded-2xl bg-amber-50/80 p-4 border border-amber-200/80 sm:col-span-2 lg:col-span-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-9 w-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0">
+                                                <Navigation size={18} />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                                                        Live GPS Coordinates
+                                                    </span>
+                                                    <span className="rounded bg-emerald-100 border border-emerald-300 text-emerald-800 text-[9px] font-black px-1.5 py-0.5 uppercase tracking-wide">
+                                                        Verified Pin
+                                                    </span>
+                                                </div>
+                                                <span className="font-mono text-xs text-slate-600 block mt-0.5">
+                                                    {property.latitude}° N, {property.longitude}° E
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <a
+                                            href={`https://www.google.com/maps?q=${property.latitude},${property.longitude}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-400 px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                                        >
+                                            <span>Open in Google Maps</span>
+                                            <ExternalLink size={13} />
+                                        </a>
                                     </div>
                                 ) : null}
                             </div>
@@ -471,8 +516,6 @@ export default function PropertyDetails() {
                             </div>
                         </div>
 
-                        {/* 7. Interactive EMI Calculator Component (Pre-loaded with this property price) */}
-                        <EmiCalculator defaultPrice={property.propertyPrice} />
                     </div>
 
                     {/* Right Column (4 cols): Sticky Price Card & Inquire CTA */}

@@ -25,7 +25,15 @@ export default function SearchBar({
     const navigate = useNavigate();
     const [query, setQuery] = useState(initialValue);
     const [suggestions, setSuggestions] = useState([]);
-    const [recentSearches, setRecentSearches] = useState([]);
+    // Load recent searches from localStorage once, on first render
+    const [recentSearches, setRecentSearches] = useState(() => {
+        try {
+            const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
+            return saved ? JSON.parse(saved).slice(0, 5) : [];
+        } catch {
+            return [];
+        }
+    });
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
@@ -34,22 +42,12 @@ export default function SearchBar({
     const inputRef = useRef(null);
     const debounceTimer = useRef(null);
 
-    // Sync external initialValue if it changes
-    useEffect(() => {
+    // Sync external initialValue if it changes (adjusting state during render avoids an extra effect pass)
+    const [prevInitialValue, setPrevInitialValue] = useState(initialValue);
+    if (initialValue !== prevInitialValue) {
+        setPrevInitialValue(initialValue);
         setQuery(initialValue);
-    }, [initialValue]);
-
-    // Load recent searches from localStorage
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
-            if (saved) {
-                setRecentSearches(JSON.parse(saved).slice(0, 5));
-            }
-        } catch {
-            setRecentSearches([]);
-        }
-    }, []);
+    }
 
     const saveRecentSearch = (term) => {
         if (!term || term.trim().length < 2) return;

@@ -1,0 +1,14 @@
+
+.env
+.env.*
+!.env.example
+
+.env
+.env.*
+!.env.example
+
+.vite/
+node_modules/
+.env
+.env.*
+!.env.example

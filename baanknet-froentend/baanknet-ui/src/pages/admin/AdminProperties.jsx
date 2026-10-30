@@ -12,16 +12,12 @@ import {
     ChevronRight,
     Building2,
     AlertCircle,
-    CheckCircle2,
     X,
     Filter,
     Table as TableIcon,
     LayoutGrid,
     Landmark,
-    MapPin,
-    Calendar,
-    ExternalLink,
-    Sparkles
+    MapPin
 } from "lucide-react";
 import {
     fetchAdminProperties,
@@ -31,7 +27,6 @@ import {
     exportPropertiesData
 } from "../../services/adminService";
 import { fetchPropertyStats } from "../../services/propertyService";
-import { formatINR, getCleanPropertyTitle } from "../../utils/formatters";
 import { useApp } from "../../context/AppContext";
 import { LoadingSpinner } from "../../components/Loading";
 
@@ -115,6 +110,7 @@ export default function AdminProperties() {
     }, [page, limit, search, bank, propertyType, status, sort]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadProperties();
     }, [loadProperties]);
 
@@ -266,10 +262,10 @@ export default function AdminProperties() {
                 <div>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
                         <Building2 className="text-amber-500" size={26} />
-                        <span>Property Listings Directory</span>
+                        <span>Auction Property Listings</span>
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500">
-                        Manage, edit, publish, and audit verified bank auction properties across India.
+                        Manage, edit, and publish bank auction properties shown on the <strong>Auction Property</strong> page (<Link to="/admin/fresh-properties" className="font-bold text-amber-600 hover:underline">manage Fresh Properties separately →</Link>).
                     </p>
                 </div>
 
@@ -311,7 +307,7 @@ export default function AdminProperties() {
                         className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 transition cursor-pointer active:scale-95 shadow-md"
                     >
                         <Plus size={16} />
-                        <span>Add Listing</span>
+                        <span>Add Auction Listing</span>
                     </Link>
                 </div>
             </div>

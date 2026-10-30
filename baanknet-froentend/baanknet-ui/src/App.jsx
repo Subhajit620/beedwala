@@ -9,10 +9,13 @@ import Footer from "./components/Footer";
 import Toast from "./components/Toast";
 import WatchlistDrawer from "./components/WatchlistDrawer";
 import CompareModal from "./components/CompareModal";
+import FlashLoader from "./components/FlashLoader";
+import ChatAssistant from "./components/ChatAssistant";
 
 // Public Marketplace Pages
 import Home from "./pages/Home";
 import Properties from "./pages/Properties";
+import FreshProperties from "./pages/FreshProperties";
 import PropertyDetails from "./pages/PropertyDetails";
 import Search from "./pages/Search";
 import About from "./pages/About";
@@ -24,6 +27,7 @@ import AdminLayout from "./components/admin/AdminLayout";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProperties from "./pages/admin/AdminProperties";
+import AdminFreshProperties from "./pages/admin/AdminFreshProperties";
 import AdminPropertyForm from "./pages/admin/AdminPropertyForm";
 import AdminBanks from "./pages/admin/AdminBanks";
 import AdminDuplicates from "./pages/admin/AdminDuplicates";
@@ -47,6 +51,7 @@ function PublicLayout() {
             <Toast />
             <WatchlistDrawer />
             <CompareModal />
+            <ChatAssistant />
         </div>
     );
 }
@@ -55,12 +60,14 @@ export default function App() {
     return (
         <AppProvider>
             <AdminAuthProvider>
+                <FlashLoader />
                 <Router>
                     <Routes>
                         {/* 1. Public Marketplace Routes */}
                         <Route element={<PublicLayout />}>
                             <Route path="/" element={<Home />} />
                             <Route path="/properties" element={<Properties />} />
+                            <Route path="/fresh-properties" element={<FreshProperties />} />
                             <Route path="/properties/:id" element={<PropertyDetails />} />
                             <Route path="/search" element={<Search />} />
                             <Route path="/about" element={<About />} />
@@ -90,6 +97,7 @@ export default function App() {
                         >
                             <Route index element={<AdminDashboard />} />
                             <Route path="properties" element={<AdminProperties />} />
+                            <Route path="fresh-properties" element={<AdminFreshProperties />} />
                             <Route path="properties/new" element={<AdminPropertyForm />} />
                             <Route path="properties/edit/:id" element={<AdminPropertyForm />} />
                             <Route path="banks" element={<AdminBanks />} />

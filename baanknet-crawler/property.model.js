@@ -27,6 +27,7 @@ const propertySchema = new mongoose.Schema(
 
         propertyTitle: String,
         propertyHeading: String,
+        propertyDescription: String,
 
         propertySubTypeId: Number,
         propertySubType: {
@@ -91,6 +92,14 @@ const propertySchema = new mongoose.Schema(
         borrowerAddress: String,
 
         locality: String,
+        latitude: {
+            type: Number,
+            index: true
+        },
+        longitude: {
+            type: Number,
+            index: true
+        },
 
         propTypeOfActionId: Number,
         propTypeOfAction: String,

@@ -37,6 +37,24 @@ export async function createProperty(propertyData) {
     return response.data;
 }
 
+/**
+ * Uploads a property video file (streamed as raw binary) and returns { url, source, size }.
+ * @param {File} file
+ * @param {(percent: number) => void} [onProgress]
+ * @param {AbortSignal} [signal]
+ */
+export async function uploadPropertyVideo(file, onProgress, signal) {
+    const response = await api.post("/uploads/video", file, {
+        headers: { "Content-Type": file.type || "video/mp4" },
+        timeout: 0, // large files can take minutes
+        signal,
+        onUploadProgress: (evt) => {
+            if (onProgress && evt.total) onProgress(Math.round((evt.loaded / evt.total) * 100));
+        }
+    });
+    return response.data.data;
+}
+
 export async function updateProperty(id, propertyData) {
     const response = await api.put(`/properties/${id}`, propertyData);
     return response.data;

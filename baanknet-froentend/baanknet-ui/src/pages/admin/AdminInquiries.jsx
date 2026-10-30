@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
 import {
     Mail,
     Phone,
     Search,
     Trash2,
-    MessageSquare,
     Download,
     AlertCircle,
     ChevronLeft,
@@ -13,16 +11,8 @@ import {
     Send,
     LayoutGrid,
     Table as TableIcon,
-    ArrowRight,
-    Clock,
     User,
-    CheckCircle2,
-    Calendar,
-    Sparkles,
-    Building2,
-    Filter,
-    X,
-    ExternalLink
+    X
 } from "lucide-react";
 import { fetchInquiries, updateInquiry, deleteInquiry } from "../../services/adminService";
 import { formatDate, formatINR } from "../../utils/formatters";
@@ -81,6 +71,7 @@ export default function AdminInquiries() {
     }, [page, limit, statusFilter, search, viewMode]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadInquiries();
     }, [loadInquiries]);
 
@@ -394,6 +385,7 @@ export default function AdminInquiries() {
                                                 </div>
 
                                                 <div className="mt-1 text-[11px] text-slate-500 truncate">
+                                                    {lead.type === "fresh_property" && <span className="mr-1 font-black text-emerald-700">FRESH ·</span>}
                                                     {lead.propertyTitle || "General Auction Inquiry"}
                                                 </div>
 
@@ -497,6 +489,9 @@ export default function AdminInquiries() {
                                         {/* Property Inquired */}
                                         <td className="py-3.5 px-4 max-w-xs">
                                             <div className="font-bold text-slate-800 truncate" title={inq.propertyTitle}>
+                                                {inq.type === "fresh_property" && (
+                                                    <span className="mr-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700">Fresh · Direct sale</span>
+                                                )}
                                                 {inq.propertyTitle || "General Auction Inquiry"}
                                             </div>
                                             {inq.propertyPrice ? (
@@ -646,6 +641,17 @@ export default function AdminInquiries() {
                                     <div className="flex items-center gap-2 mt-1">
                                         {getStatusBadge(activeLead.status)}
                                         {getPriorityBadge(activeLead.priority)}
+                                        <select
+                                            aria-label="Change lead priority"
+                                            value={activeLead.priority || "low"}
+                                            onChange={(e) => handlePriorityUpdate(activeLead._id, e.target.value)}
+                                            className="ml-auto h-7 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 outline-none focus:border-amber-500 cursor-pointer"
+                                        >
+                                            <option value="low">Low priority</option>
+                                            <option value="medium">Medium priority</option>
+                                            <option value="high">High priority</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -654,14 +660,14 @@ export default function AdminInquiries() {
                             {activeLead.propertyTitle && (
                                 <div className="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4">
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
-                                        Inquired Property Notice
+                                        {activeLead.type === "fresh_property" ? "Fresh Property · Direct Sale (No Auction)" : "Inquired Property Notice"}
                                     </span>
                                     <h4 className="text-sm font-bold text-slate-900 mt-1">
                                         {activeLead.propertyTitle}
                                     </h4>
                                     {activeLead.propertyPrice && (
                                         <div className="text-xs font-bold text-emerald-700 mt-1">
-                                            Reserve Price: ₹{activeLead.propertyPrice.toLocaleString("en-IN")}
+                                            {activeLead.type === "fresh_property" ? "Asking Price" : "Reserve Price"}: ₹{activeLead.propertyPrice.toLocaleString("en-IN")}
                                         </div>
                                     )}
                                 </div>

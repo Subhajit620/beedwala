@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Eye, FileSpreadsheet, Gavel, Award, CheckCircle2, ChevronRight, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
+import { Search, Eye, FileSpreadsheet, Gavel, Award, CheckCircle2, ShieldCheck, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function AuctionRoadmap() {

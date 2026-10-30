@@ -67,7 +67,8 @@ export default function WatchlistDrawer() {
                             savedProperties.map((property) => {
                                 const id = property.sourcePropertyId || property._id;
                                 const cleanTitle = getCleanPropertyTitle(property);
-                                const hasPhoto = property.photos && property.photos.length > 0 && property.photos[0];
+                                const photoSrc = property.displayImage || (property.photos && property.photos.length > 0 ? property.photos[0] : null);
+                                const hasPhoto = Boolean(photoSrc);
 
                                 return (
                                     <div
@@ -78,7 +79,7 @@ export default function WatchlistDrawer() {
                                         <div className="h-20 w-20 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
                                             {hasPhoto ? (
                                                 <img
-                                                    src={property.photos[0]}
+                                                    src={photoSrc}
                                                     alt={cleanTitle}
                                                     className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
                                                 />

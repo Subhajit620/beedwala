@@ -1,18 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-    BarChart3,
-    TrendingUp,
-    Building2,
-    Landmark,
-    DollarSign,
-    Layers,
-    Download,
-    RefreshCw,
-    Sparkles,
-    Shield
-} from "lucide-react";
+import { BarChart3, Download, RefreshCw } from "lucide-react";
 import { fetchAdminDashboardStats, exportPropertiesData } from "../../services/adminService";
-import { formatCompactINR, formatINR } from "../../utils/formatters";
+import { formatCompactINR } from "../../utils/formatters";
 import { LoadingSpinner } from "../../components/Loading";
 import { useApp } from "../../context/AppContext";
 import {
@@ -44,6 +33,7 @@ export default function AdminAnalytics() {
     }, [addToast]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadAnalytics();
     }, [loadAnalytics]);
 

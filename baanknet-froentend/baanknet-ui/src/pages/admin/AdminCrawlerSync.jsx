@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
     RefreshCw,
-    CheckCircle2,
     Clock,
     Layers,
     Database,
@@ -12,8 +11,6 @@ import {
     ChevronRight,
     Settings,
     Activity,
-    Landmark,
-    AlertTriangle,
     Sliders,
     X,
     Save
@@ -92,6 +89,7 @@ export default function AdminCrawlerSync() {
     }, [page, limit, addToast]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadSyncData();
     }, [loadSyncData]);
 
@@ -260,7 +258,7 @@ export default function AdminCrawlerSync() {
                         </div>
                     </div>
                     <div className="mt-2 text-lg font-black text-slate-900 truncate">
-                        {formatDate(lastSync?.createdAt || new Date())}
+                        {lastSync?.createdAt ? formatDate(lastSync.createdAt) : "Not synced yet"}
                     </div>
                     <div className="mt-1 text-[11px] text-slate-400 font-medium">
                         Duration: {lastSync?.executionTimeMs ? `${(lastSync.executionTimeMs / 1000).toFixed(1)}s` : "2.4s"}

@@ -1,32 +1,40 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
     Menu,
     X,
     Bookmark,
     Scale,
     Sparkles,
-    ShieldCheck,
     Search,
-    Building2,
-    Landmark,
-    MapPin,
     ArrowRight,
-    Shield
+    Shield,
+    ChevronDown,
+    Compass
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { fetchProperties } from "../services/propertyService";
-import { formatINR } from "../utils/formatters";
 import logoImg from "../assets/logo.jpg";
 
 export default function Navbar() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const handleOpenBuyerGuide = () => {
+        setMobileMenuOpen(false);
+        if (location.pathname === "/") {
+            window.dispatchEvent(new CustomEvent("bw:open-welcome-modal"));
+        } else {
+            navigate("/?guide=1");
+        }
+    };
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
-    const [searchLoading, setSearchLoading] = useState(false);
     const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
     const searchRef = useRef(null);
+    // Results are only shown for queries of 2+ characters (derived — no state reset needed)
+    const searchQueryReady = searchQuery.trim().length >= 2;
 
     const {
         savedProperties,
@@ -37,21 +45,19 @@ export default function Navbar() {
 
     const navItems = [
         { name: "Home", path: "/" },
-        { name: "Properties", path: "/properties" },
+        { name: "Property", children: [
+            { name: "Fresh Property", path: "/fresh-properties" },
+            { name: "Auction Property", path: "/properties" }
+        ] },
         { name: "About", path: "/about" },
         { name: "Contact", path: "/contact" }
     ];
 
     // Live search debouncing
     useEffect(() => {
-        if (!searchQuery.trim() || searchQuery.trim().length < 2) {
-            setSearchResults([]);
-            setSearchDropdownOpen(false);
-            return;
-        }
+        if (!searchQueryReady) return;
 
         const timeout = setTimeout(async () => {
-            setSearchLoading(true);
             try {
                 const res = await fetchProperties({
                     search: searchQuery.trim(),
@@ -63,13 +69,11 @@ export default function Navbar() {
                 }
             } catch (err) {
                 console.error("Navbar search error:", err);
-            } finally {
-                setSearchLoading(false);
             }
         }, 220);
 
         return () => clearTimeout(timeout);
-    }, [searchQuery]);
+    }, [searchQuery, searchQueryReady]);
 
     // Close search dropdown on outside click
     useEffect(() => {
@@ -146,7 +150,7 @@ export default function Navbar() {
                         </form>
 
                         {/* Live Search Results Dropdown */}
-                        {searchDropdownOpen && searchResults.length > 0 && (
+                        {searchDropdownOpen && searchQueryReady && searchResults.length > 0 && (
                             <div className="absolute top-12 left-0 right-0 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl z-50 animate-scale-up space-y-1">
                                 <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                                     <span>Matching Properties</span>
@@ -201,7 +205,29 @@ export default function Navbar() {
 
                     {/* Desktop Navigation Links */}
                     <nav className="hidden lg:flex items-center gap-6 shrink-0">
-                        {navItems.map((item) => (
+                        {navItems.map((item) => item.children ? (
+                            <details key={item.name} className="relative" onBlur={(event) => {
+                                if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+                            }} onKeyDown={(event) => {
+                                if (event.key === "Escape") {
+                                    event.currentTarget.open = false;
+                                    event.currentTarget.querySelector("summary").focus();
+                                }
+                            }}>
+                                <summary className="flex cursor-pointer list-none items-center gap-1 py-1.5 px-1 text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-amber-600 [&::-webkit-details-marker]:hidden">
+                                    {item.name}<ChevronDown size={14} />
+                                </summary>
+                                <div className="absolute left-0 top-full mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                                    {item.children.map((child) => (
+                                        <NavLink key={child.path} to={child.path}
+                                            onClick={(event) => { event.currentTarget.closest("details").open = false; }}
+                                            className={({ isActive }) => `block rounded-lg px-3 py-2.5 text-xs font-bold transition ${isActive ? "bg-amber-50 text-amber-700" : "text-slate-600 hover:bg-slate-50 hover:text-amber-600"}`}>
+                                            {child.name}
+                                        </NavLink>
+                                    ))}
+                                </div>
+                            </details>
+                        ) : (
                             <NavLink
                                 key={item.path}
                                 to={item.path}
@@ -258,6 +284,17 @@ export default function Navbar() {
                         >
                             <Shield size={16} className="text-slate-600 hover:text-amber-600" />
                         </Link>
+
+                        {/* Buyer Quick Guide Popup Trigger */}
+                        <button
+                            type="button"
+                            onClick={handleOpenBuyerGuide}
+                            className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900 transition shadow-xs cursor-pointer active:scale-95"
+                            title="Open Smart Property Finder & Buyer Guide"
+                        >
+                            <Compass size={14} className="text-amber-600" />
+                            <span>Quick Guide</span>
+                        </button>
 
                         {/* Explore CTA Button (Desktop) */}
                         <Link
@@ -322,7 +359,21 @@ export default function Navbar() {
                     </form>
 
                     <nav className="flex flex-col gap-1.5">
-                        {navItems.map((item) => (
+                        {navItems.map((item) => item.children ? (
+                            <details key={item.name} className="rounded-xl">
+                                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 [&::-webkit-details-marker]:hidden">
+                                    {item.name}<ChevronDown size={16} />
+                                </summary>
+                                <div className="ml-4 space-y-1 border-l border-amber-200 pl-2">
+                                    {item.children.map((child) => (
+                                        <NavLink key={child.path} to={child.path} onClick={() => setMobileMenuOpen(false)}
+                                            className={({ isActive }) => `block rounded-xl px-4 py-2.5 text-xs font-bold ${isActive ? "bg-amber-50 text-amber-700" : "text-slate-700 hover:bg-slate-50"}`}>
+                                            {child.name}
+                                        </NavLink>
+                                    ))}
+                                </div>
+                            </details>
+                        ) : (
                             <NavLink
                                 key={item.path}
                                 to={item.path}

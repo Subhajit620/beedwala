@@ -10,14 +10,12 @@ import {
     LayoutGrid,
     List,
     Compass,
-    SlidersHorizontal,
     Share2,
     Check
 } from "lucide-react";
 
 import {
     fetchProperties,
-    fetchPropertyStats,
     fetchPropertyFacets
 } from "../services/propertyService";
 import PropertyFilters from "../components/PropertyFilters";
@@ -49,8 +47,6 @@ export default function Properties() {
 
     // Dynamic facets and stats
     const [facets, setFacets] = useState(null);
-    const [availableStates, setAvailableStates] = useState(["West Bengal"]);
-    const [availableCities, setAvailableCities] = useState(["Kolkata"]);
     const [availableBanks, setAvailableBanks] = useState([]);
 
     // Filters state synchronized with searchParams
@@ -90,16 +86,6 @@ export default function Properties() {
             .catch((err) => {
                 console.warn("Failed to load facets:", err.message);
             });
-
-        fetchPropertyStats()
-            .then((res) => {
-                if (isMounted && res?.success && res?.data) {
-                    if (res.data.states && res.data.states.length > 0) {
-                        setAvailableStates(res.data.states);
-                    }
-                }
-            })
-            .catch(() => {});
 
         return () => {
             isMounted = false;
@@ -151,6 +137,7 @@ export default function Properties() {
     }, [page, limit, filters]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadProperties();
     }, [loadProperties]);
 
@@ -300,8 +287,6 @@ export default function Properties() {
                     onChange={handleFilterChange}
                     onReset={handleResetFilters}
                     facets={facets}
-                    states={availableStates}
-                    cities={availableCities}
                     types={types}
                     subTypes={subTypes}
                     banks={availableBanks}

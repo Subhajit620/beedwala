@@ -1,6 +1,5 @@
 import React from "react";
-import { MapPin, Landmark, Building, Compass, Info, ArrowRight, CheckCircle2 } from "lucide-react";
-import { formatINR } from "../utils/formatters";
+import { MapPin, Landmark, Compass, Info, CheckCircle2 } from "lucide-react";
 
 export default function LocalityExplorer({
     facets,

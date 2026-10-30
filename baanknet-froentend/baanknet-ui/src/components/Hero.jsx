@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
     Search,
     MapPin,
@@ -8,21 +8,14 @@ import {
     ShieldCheck,
     ArrowRight,
     Sparkles,
-    TrendingDown,
-    Flame,
     Home as HomeIcon,
     Briefcase,
-    Factory,
-    CheckCircle2,
     DollarSign,
-    ChevronLeft,
-    ChevronRight,
-    Ruler,
-    Radio
+    Compass
 } from "lucide-react";
 import CoverflowCarousel from "./CoverflowCarousel";
 
-export default function Hero({ stats = {} }) {
+export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal }) {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedLocation, setSelectedLocation] = useState("");
@@ -183,6 +176,29 @@ export default function Hero({ stats = {} }) {
                             <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl font-normal pt-1">
                                 Discover an authorized bank marketplace for real estate across India, offering transparent reserve prices. <strong className="text-slate-900 font-semibold">20% to 35% below market valuation</strong> with 100% clean title deeds.
                             </p>
+
+                            {/* Quick Animated Action Pills: Fresh Direct Properties + Smart Buyer Finder Popup */}
+                            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                                <Link
+                                    to="/fresh-properties"
+                                    className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 animate-pulse-emerald"
+                                >
+                                    <Sparkles size={14} className="text-emerald-200" />
+                                    <span>Fresh Properties (No Auction{freshCount > 0 ? ` • ${freshCount}` : ""})</span>
+                                    <ArrowRight size={13} className="group-hover:translate-x-1 transition" />
+                                </Link>
+
+                                {onOpenWelcomeModal && (
+                                    <button
+                                        type="button"
+                                        onClick={onOpenWelcomeModal}
+                                        className="group inline-flex items-center gap-2 rounded-2xl border border-amber-400/70 bg-slate-950 hover:bg-slate-900 px-4 py-2.5 text-xs font-black text-amber-400 shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer animate-pulse-glow"
+                                    >
+                                        <Compass size={14} className="text-amber-400 group-hover:rotate-45 transition duration-300" />
+                                        <span>Smart Property Finder &amp; Guide</span>
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Search Console Container */}

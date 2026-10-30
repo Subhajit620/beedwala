@@ -8,7 +8,6 @@ import {
     Sparkles,
     ArrowRight,
     AlertCircle,
-    Shield,
     CheckCircle2
 } from "lucide-react";
 import { useAdminAuth } from "../../context/AdminAuthContext";

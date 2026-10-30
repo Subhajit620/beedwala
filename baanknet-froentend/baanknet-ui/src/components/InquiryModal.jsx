@@ -41,9 +41,8 @@ export default function InquiryModal({ property, isOpen, onClose }) {
             addToast("Inquiry submitted successfully! The Bidwallah bank desk will contact you.", "success");
         } catch (err) {
             console.error("Inquiry error:", err);
-            // Fallback success for good UX even if offline
-            setSubmitted(true);
-            addToast("Inquiry recorded! An officer will connect shortly.", "success");
+            // Don't pretend it worked — the lead would be lost. Keep the form filled so the user can retry.
+            addToast(err?.response?.data?.message || "Couldn't send your inquiry. Please check your connection and try again.", "error");
         } finally {
             setSubmitting(false);
         }

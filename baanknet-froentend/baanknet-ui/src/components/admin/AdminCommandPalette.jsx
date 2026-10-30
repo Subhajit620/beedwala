@@ -15,21 +15,36 @@ import {
     X,
     ArrowRight,
     Sparkles,
-    Shield,
-    Database
+    Shield
 } from "lucide-react";
 import { fetchAdminProperties, fetchInquiries, triggerCrawlerSync } from "../../services/adminService";
 import { useApp } from "../../context/AppContext";
+
+const NO_RESULTS = [];
 
 export default function AdminCommandPalette({ isOpen, onClose }) {
     const navigate = useNavigate();
     const { addToast } = useApp();
     const [query, setQuery] = useState("");
-    const [propertyResults, setPropertyResults] = useState([]);
-    const [inquiryResults, setInquiryResults] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [rawPropertyResults, setPropertyResults] = useState([]);
+    const [rawInquiryResults, setInquiryResults] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef(null);
+
+    // Reset the palette each time it opens (adjusting state during render instead of in an effect)
+    const [wasOpen, setWasOpen] = useState(isOpen);
+    if (isOpen !== wasOpen) {
+        setWasOpen(isOpen);
+        if (isOpen) {
+            setQuery("");
+            setSelectedIndex(0);
+        }
+    }
+
+    // Live results only apply to 2+ character queries while open (derived, no state reset needed)
+    const searchReady = isOpen && query.trim().length >= 2;
+    const propertyResults = searchReady ? rawPropertyResults : NO_RESULTS;
+    const inquiryResults = searchReady ? rawInquiryResults : NO_RESULTS;
 
     // Static Navigation & Command Actions
     const staticActions = [
@@ -144,23 +159,16 @@ export default function AdminCommandPalette({ isOpen, onClose }) {
 
     // Focus input on open
     useEffect(() => {
-        if (isOpen) {
-            setQuery("");
-            setSelectedIndex(0);
-            setTimeout(() => inputRef.current?.focus(), 50);
-        }
+        if (!isOpen) return;
+        const t = setTimeout(() => inputRef.current?.focus(), 50);
+        return () => clearTimeout(t);
     }, [isOpen]);
 
     // Live Search debounce
     useEffect(() => {
-        if (!isOpen || !query.trim() || query.trim().length < 2) {
-            setPropertyResults([]);
-            setInquiryResults([]);
-            return;
-        }
+        if (!searchReady) return;
 
         const timeout = setTimeout(async () => {
-            setLoading(true);
             try {
                 const [propsRes, inqRes] = await Promise.allSettled([
                     fetchAdminProperties({ search: query.trim(), limit: 4 }),
@@ -180,13 +188,11 @@ export default function AdminCommandPalette({ isOpen, onClose }) {
                 }
             } catch (err) {
                 console.error("Command palette search error:", err);
-            } finally {
-                setLoading(false);
             }
         }, 220);
 
         return () => clearTimeout(timeout);
-    }, [query, isOpen]);
+    }, [query, searchReady]);
 
     // Filtered static actions
     const filteredActions = staticActions.filter(

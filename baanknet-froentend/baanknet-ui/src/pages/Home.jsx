@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
     ShieldCheck,
     Landmark,
@@ -13,28 +13,35 @@ import {
     Flame,
     CheckCircle2,
     XCircle,
-    Calculator,
     Bell,
-    Check
+    Check,
+    Compass,
+    MapPin,
+    Film
 } from "lucide-react";
 
 import { fetchProperties, fetchPropertyStats } from "../services/propertyService";
+import { fetchFreshProperties } from "../services/freshPropertyService";
 import Hero from "../components/Hero";
 import PropertyGrid from "../components/PropertyGrid";
 import BankPartnersMarquee from "../components/BankPartnersMarquee";
 import AuctionRoadmap from "../components/AuctionRoadmap";
 import FaqSection from "../components/FaqSection";
 import EmiCalculator from "../components/EmiCalculator";
+import UserWelcomeModal from "../components/UserWelcomeModal";
 import { PropertyGridSkeleton } from "../components/Loading";
 import { useApp } from "../context/AppContext";
 
 export default function Home() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [properties, setProperties] = useState([]);
+    const [freshProperties, setFreshProperties] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [featuredTab, setFeaturedTab] = useState("all");
     const [vipEmail, setVipEmail] = useState("");
     const [vipSubscribed, setVipSubscribed] = useState(false);
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
     const { addToast } = useApp();
 
     // Dynamic stats from server stats endpoint
@@ -50,13 +57,14 @@ export default function Home() {
             setLoading(true);
             setError("");
 
-            // Fetch live server stats and featured listings concurrently
-            const [statsRes, propertiesRes] = await Promise.all([
+            // Fetch live server stats, featured auction listings, and fresh properties concurrently
+            const [statsRes, propertiesRes, freshRes] = await Promise.all([
                 fetchPropertyStats().catch((e) => {
                     console.warn("Failed to fetch stats:", e);
                     return null;
                 }),
-                fetchProperties({ limit: 12, sort: "newest" })
+                fetchProperties({ limit: 12, sort: "newest" }),
+                fetchFreshProperties(false).catch(() => null)
             ]);
 
             if (statsRes && statsRes.success && statsRes.data) {
@@ -66,6 +74,10 @@ export default function Home() {
                     totalStates: statsRes.data.totalStates || 1,
                     totalBanks: statsRes.data.totalBanks || 13
                 });
+            }
+
+            if (freshRes && Array.isArray(freshRes.data)) {
+                setFreshProperties(freshRes.data);
             }
 
             const data = propertiesRes?.data || [];
@@ -79,8 +91,40 @@ export default function Home() {
     }, []);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadData();
     }, [loadData]);
+
+    // Auto-open Buyer Welcome & Smart Finder Popup once per session (after FlashLoader completes)
+    // or immediately when triggered from Navbar (?guide=1 or custom event)
+    useEffect(() => {
+        const handleCustomOpen = () => setShowWelcomeModal(true);
+        window.addEventListener("bw:open-welcome-modal", handleCustomOpen);
+
+        if (searchParams.get("guide") === "1") {
+            // oxlint-disable-next-line react/set-state-in-effect -- open modal from URL query trigger
+            setShowWelcomeModal(true);
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete("guide");
+            setSearchParams(nextParams, { replace: true });
+            return () => window.removeEventListener("bw:open-welcome-modal", handleCustomOpen);
+        }
+
+        const alreadyShown = sessionStorage.getItem("bw_user_welcome_shown");
+        const isAutomatedBrowser = typeof navigator !== "undefined" && navigator.webdriver === true;
+        if (!alreadyShown && !isAutomatedBrowser) {
+            const timer = setTimeout(() => {
+                setShowWelcomeModal(true);
+                sessionStorage.setItem("bw_user_welcome_shown", "1");
+            }, 2600);
+            return () => {
+                clearTimeout(timer);
+                window.removeEventListener("bw:open-welcome-modal", handleCustomOpen);
+            };
+        }
+
+        return () => window.removeEventListener("bw:open-welcome-modal", handleCustomOpen);
+    }, [searchParams, setSearchParams]);
 
     // Filter featured properties based on selected tab
     const featuredProperties = useMemo(() => {
@@ -104,11 +148,139 @@ export default function Home() {
 
     return (
         <div className="flex flex-col min-h-screen">
+            {/* Animated Buyer Welcome & Smart Property Finder Popup */}
+            <UserWelcomeModal
+                isOpen={showWelcomeModal}
+                onClose={() => setShowWelcomeModal(false)}
+                stats={stats}
+                freshCount={freshProperties.length}
+            />
+
             {/* 1. Hero Section with multi-parameter search console & animated image */}
-            <Hero stats={stats} />
+            <Hero
+                stats={stats}
+                freshCount={freshProperties.length}
+                onOpenWelcomeModal={() => setShowWelcomeModal(true)}
+            />
 
             {/* 2. Institutional Banking Partners Bar */}
             <BankPartnersMarquee />
+
+            {/* 2.5 Interactive Dual-Path Buyer Showcase: Fresh Property (Direct Sale) vs Bank Auction */}
+            <section className="py-10 sm:py-14 bg-slate-950 text-white border-b border-slate-800 relative overflow-hidden">
+                <div className="pointer-events-none absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl animate-orb-drift" />
+                <div className="pointer-events-none absolute -bottom-24 right-1/4 h-72 w-72 rounded-full bg-amber-500/15 blur-3xl animate-orb-drift" />
+
+                <div className="relative mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 sm:mb-8">
+                        <div>
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 px-3.5 py-1 text-xs font-bold text-emerald-300 mb-2">
+                                <Sparkles size={13} className="text-emerald-400" />
+                                <span>Two Transparent Ways to Buy</span>
+                            </div>
+                            <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-white tracking-tight">
+                                Fresh Direct Properties vs. Bank Auctions
+                            </h2>
+                            <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-2xl">
+                                Buy directly from Bidwallah Admin at a fixed price with zero auction formalities, or bid on official SARFAESI bank notices at 20%–35% below market valuation.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowWelcomeModal(true)}
+                            className="inline-flex items-center gap-2 self-start md:self-auto rounded-2xl border border-amber-400/50 bg-amber-500/15 hover:bg-amber-500/25 px-4 py-2.5 text-xs font-black text-amber-300 transition cursor-pointer animate-pulse-glow"
+                        >
+                            <Compass size={15} className="text-amber-400" />
+                            <span>Open Smart Property Finder</span>
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                        {/* Card 1: Fresh Property (Direct from Admin · No Auction) */}
+                        <Link
+                            to="/fresh-properties"
+                            className="group relative flex flex-col justify-between rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-900 p-6 sm:p-7 hover:border-emerald-400 transition-all duration-300 hover:-translate-y-1 animate-pulse-emerald"
+                        >
+                            <div>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-slate-950 shadow-lg group-hover:scale-110 transition">
+                                        <Sparkles size={24} />
+                                    </div>
+                                    <span className="rounded-full bg-emerald-500/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-emerald-300">
+                                        No Auction • Direct Admin Sale
+                                    </span>
+                                </div>
+
+                                <h3 className="mt-5 text-xl sm:text-2xl font-black text-white group-hover:text-emerald-300 transition">
+                                    Fresh Properties ({freshProperties.length} Available)
+                                </h3>
+                                <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                    Exclusively uploaded by the Bidwallah Admin. Fixed asking price, no e-bidding, and no EMD deposit — view photos, walkthrough videos &amp; GPS map location, then click <strong>&ldquo;I&apos;m Interested&rdquo;</strong> to connect directly with Admin.
+                                </p>
+
+                                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-emerald-300">
+                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-emerald-500/25 px-3 py-1">
+                                        <ShieldCheck size={13} /> Admin Verified Only
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-emerald-500/25 px-3 py-1">
+                                        <Film size={13} /> HD Videos &amp; Photos
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-emerald-500/25 px-3 py-1">
+                                        <MapPin size={13} /> Exact GPS Pin
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 pt-4 border-t border-emerald-500/20 flex items-center justify-between text-xs sm:text-sm font-black text-emerald-400">
+                                <span>Browse All Fresh Properties (No Auction)</span>
+                                <ArrowRight size={16} className="group-hover:translate-x-1.5 transition" />
+                            </div>
+                        </Link>
+
+                        {/* Card 2: Bank Auction Properties (SARFAESI Notices) */}
+                        <Link
+                            to="/properties"
+                            className="group relative flex flex-col justify-between rounded-3xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-950/50 via-slate-900 to-slate-900 p-6 sm:p-7 hover:border-amber-400 transition-all duration-300 hover:-translate-y-1 animate-pulse-glow"
+                        >
+                            <div>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-lg group-hover:scale-110 transition">
+                                        <Landmark size={24} />
+                                    </div>
+                                    <span className="rounded-full bg-amber-500/20 border border-amber-400/40 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-300">
+                                        SARFAESI Bank Notices
+                                    </span>
+                                </div>
+
+                                <h3 className="mt-5 text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition">
+                                    Bank Auction Properties ({stats.totalProperties.toLocaleString("en-IN")}+ Listings)
+                                </h3>
+                                <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                    Official institutional auction notices from State Bank of India, PNB, Indian Bank &amp; 13+ partner banks. Acquire residential, commercial, and land assets at <strong>20% to 35% below market valuation</strong> with 0% brokerage.
+                                </p>
+
+                                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-amber-300">
+                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-amber-500/25 px-3 py-1">
+                                        <TrendingDown size={13} /> 20%–35% Below Market
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-amber-500/25 px-3 py-1">
+                                        <ShieldCheck size={13} /> Clean Sale Certificate
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-amber-500/25 px-3 py-1">
+                                        <Building2 size={13} /> 0% Brokerage
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 pt-4 border-t border-amber-500/20 flex items-center justify-between text-xs sm:text-sm font-black text-amber-400">
+                                <span>Explore Bank Auction Directory</span>
+                                <ArrowRight size={16} className="group-hover:translate-x-1.5 transition" />
+                            </div>
+                        </Link>
+                    </div>
+                </div>
+            </section>
 
             {/* 3. Featured Bank Auction Properties Section */}
             <section className="py-12 sm:py-20 bg-slate-50 relative">

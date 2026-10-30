@@ -221,6 +221,52 @@
   animation: fadeIn 0.25s ease-out forwards;
 }
 
+/* Springy popup entrance & staggered card animations */
+@keyframes popupBounceIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.92);
+  }
+  65% {
+    opacity: 1;
+    transform: translate3d(0, -4px, 0) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes orbDrift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -14px, 0) scale(1.08);
+  }
+}
+
+@keyframes bellSwing {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-6deg); }
+}
+
+.animate-popup-spring {
+  animation: popupBounceIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-orb-drift {
+  animation: orbDrift 6s ease-in-out infinite;
+}
+
+.animate-bell-swing {
+  animation: bellSwing 1.8s ease-in-out infinite;
+  transform-origin: top center;
+}
+
 /* Smooth Headline Dynamic Word 3D Flip */
 @keyframes rotateWord {
   0% {

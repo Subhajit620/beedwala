@@ -5,8 +5,7 @@ import {
     MapPin,
     Send,
     CheckCircle2,
-    ShieldCheck,
-    AlertCircle
+    ShieldCheck
 } from "lucide-react";
 import { createInquiry } from "../services/adminService";
 import { useApp } from "../context/AppContext";

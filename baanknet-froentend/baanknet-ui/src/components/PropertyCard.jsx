@@ -10,7 +10,6 @@ import {
     Scale,
     Check,
     Flame,
-    ShieldCheck,
     FileText,
     Calendar
 } from "lucide-react";
@@ -29,8 +28,7 @@ export default function PropertyCard({ property, viewMode = "grid" }) {
     if (!property) return null;
 
     const propertyId = property.sourcePropertyId || property.propertyUniqueId || property._id;
-    const hasPhoto = property.photos && property.photos.length > 0 && property.photos[0];
-    const imageSrc = hasPhoto ? property.photos[0] : null;
+    const imageSrc = property.displayImage || (property.photos && property.photos.length > 0 ? property.photos[0] : null);
 
     const cleanTitle = getCleanPropertyTitle(property);
     const pricePerSqFt = calculatePricePerSqFt(property.propertyPrice, property.area);

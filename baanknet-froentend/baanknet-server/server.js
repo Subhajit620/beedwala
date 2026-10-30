@@ -1,5 +1,8 @@
-require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
+const crypto = require("crypto");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -7,7 +10,26 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// ===============================
+// Media Uploads (property videos are stored on disk, not in MongoDB)
+// ===============================
+
+const UPLOADS_DIR = path.join(__dirname, "uploads");
+const VIDEO_UPLOAD_DIR = path.join(UPLOADS_DIR, "videos");
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
+const VIDEO_EXTENSIONS = {
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/ogg": ".ogv",
+    "video/quicktime": ".mov"
+};
+fs.mkdirSync(VIDEO_UPLOAD_DIR, { recursive: true });
+
+// Served under /api so the frontend can resolve paths against its API base URL
+app.use("/api/uploads", express.static(UPLOADS_DIR, { maxAge: "7d" }));
 
 // ===============================
 // MongoDB Connection
@@ -54,6 +76,7 @@ const propertySchema = new mongoose.Schema(
 
         propertyTitle: String,
         propertyHeading: String,
+        propertyDescription: String,
 
         propertySubTypeId: Number,
         propertySubType: {
@@ -119,6 +142,14 @@ const propertySchema = new mongoose.Schema(
         borrowerAddress: String,
 
         locality: String,
+        latitude: {
+            type: Number,
+            index: true
+        },
+        longitude: {
+            type: Number,
+            index: true
+        },
 
         propTypeOfActionId: Number,
         propTypeOfAction: String,
@@ -134,6 +165,20 @@ const propertySchema = new mongoose.Schema(
             default: []
         },
         displayImage: String,
+
+        // Walkthrough / drone videos: uploaded files (served from /api/uploads/videos)
+        // or external links (YouTube, Vimeo, direct .mp4/.webm URLs)
+        videos: {
+            type: [
+                {
+                    _id: false,
+                    url: { type: String, required: true },
+                    source: { type: String, enum: ["upload", "youtube", "vimeo", "link"], default: "link" },
+                    title: String
+                }
+            ],
+            default: []
+        },
 
         createdOn: {
             type: Date,
@@ -266,14 +311,20 @@ const inquirySchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+        // Email OR phone is required (validated in POST /api/inquiries) — many buyers only share a phone number
         email: {
             type: String,
-            required: true,
             trim: true
         },
         phone: {
             type: String,
             trim: true
+        },
+        // "property_inquiry" (auction), "fresh_property" (direct sale) or "contact_message"
+        type: {
+            type: String,
+            default: "contact_message",
+            index: true
         },
         subject: {
             type: String,
@@ -509,6 +560,45 @@ const ADMIN_CREDENTIALS = {
     role: "super_admin"
 };
 
+const adminSessions = new Map();
+const signAdminToken = (email) => {
+    const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + 24 * 60 * 60 * 1000 })).toString("base64url");
+    const sig = crypto.createHmac("sha256", ADMIN_CREDENTIALS.password).update(payload).digest("base64url");
+    return `bw_adm_${payload}.${sig}`;
+};
+const isValidAdminToken = (token) => {
+    if (!token) return false;
+    if ((adminSessions.get(token) || 0) > Date.now()) return true;
+    // Accept HMAC-signed tokens across server restarts and local fallback tokens from AdminAuthContext
+    if (token.startsWith("bw_adm_")) {
+        const rest = token.slice(7);
+        const dot = rest.indexOf(".");
+        if (dot > 0) {
+            const payload = rest.slice(0, dot);
+            const sig = rest.slice(dot + 1);
+            const expected = crypto.createHmac("sha256", ADMIN_CREDENTIALS.password).update(payload).digest("base64url");
+            try {
+                const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+                if (sig === expected && parsed.exp > Date.now()) return true;
+            } catch {}
+        }
+        try {
+            const decoded = Buffer.from(rest, "base64").toString("utf8");
+            if (/^(admin@bidwallah\.com|admin@baanknet\.com|admin):\d+$/.test(decoded)) return true;
+        } catch {}
+    }
+    return false;
+};
+const requireFreshPropertyAdmin = (req, res, next) => {
+    const token = (req.headers.authorization || "").replace(/^Bearer /, "");
+    if (!isValidAdminToken(token)) {
+        adminSessions.delete(token);
+        return res.status(401).json({ success: false, message: "Please sign in again to manage fresh properties." });
+    }
+    next();
+};
+require("./fresh-properties")(app, mongoose, requireFreshPropertyAdmin);
+
 // In-Memory Crawler Engine Settings
 let crawlerSettings = {
     autoSyncEnabled: true,
@@ -539,9 +629,10 @@ app.post("/api/auth/login", async (req, res) => {
         const validPassword = password === ADMIN_CREDENTIALS.password || password === "admin123" || password === "admin";
 
         if (validEmail && validPassword) {
-            const token = "bw_adm_" + Buffer.from(`${email}:${Date.now()}`).toString("base64");
+            const token = signAdminToken(email.trim().toLowerCase());
 
             await recordAudit("Admin Login", "auth", "admin", "Session Initiated", { email }, "System Administrator");
+            adminSessions.set(token, Date.now() + 24 * 60 * 60 * 1000);
 
             return res.json({
                 success: true,
@@ -1066,6 +1157,69 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
 // 4. Property CRUD & Batch Operations
 // ===============================
 
+// Normalise the videos array coming from the admin form
+function sanitizeVideos(videos) {
+    if (!Array.isArray(videos)) return [];
+    return videos
+        .map((v) => (typeof v === "string" ? { url: v } : v))
+        .filter((v) => v && typeof v.url === "string" && v.url.trim())
+        .slice(0, 10)
+        .map((v) => ({
+            url: v.url.trim(),
+            source: ["upload", "youtube", "vimeo", "link"].includes(v.source) ? v.source : "link",
+            title: typeof v.title === "string" ? v.title.trim().slice(0, 120) : ""
+        }));
+}
+
+// POST /api/uploads/video — raw binary body (Content-Type: video/*), streamed to disk
+app.post("/api/uploads/video", (req, res) => {
+    const mime = String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+    const ext = VIDEO_EXTENSIONS[mime];
+    if (!ext) {
+        return res.status(415).json({ success: false, message: "Unsupported video format. Use MP4, WebM, OGG or MOV." });
+    }
+
+    const declared = Number(req.headers["content-length"] || 0);
+    if (declared > MAX_VIDEO_BYTES) {
+        return res.status(413).json({ success: false, message: "Video is larger than 200 MB." });
+    }
+
+    const fileName = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`;
+    const filePath = path.join(VIDEO_UPLOAD_DIR, fileName);
+    const out = fs.createWriteStream(filePath);
+    let received = 0;
+    let aborted = false;
+
+    const fail = (status, message) => {
+        if (aborted) return;
+        aborted = true;
+        req.unpipe(out);
+        out.destroy();
+        fs.unlink(filePath, () => {});
+        if (!res.headersSent) res.status(status).json({ success: false, message });
+    };
+
+    req.on("data", (chunk) => {
+        received += chunk.length;
+        if (received > MAX_VIDEO_BYTES) fail(413, "Video is larger than 200 MB.");
+    });
+    req.on("aborted", () => fail(400, "Upload was cancelled."));
+    out.on("error", (err) => fail(500, `Failed to store video: ${err.message}`));
+    out.on("finish", () => {
+        if (aborted) return;
+        if (received === 0) {
+            fs.unlink(filePath, () => {});
+            return res.status(400).json({ success: false, message: "Empty video upload." });
+        }
+        res.status(201).json({
+            success: true,
+            data: { url: `/uploads/videos/${fileName}`, source: "upload", size: received }
+        });
+    });
+
+    req.pipe(out);
+});
+
 // POST /api/properties (Create)
 app.post("/api/properties", async (req, res) => {
     try {
@@ -1075,13 +1229,23 @@ app.post("/api/properties", async (req, res) => {
         const sourcePropertyId = data.sourcePropertyId || `BW-${timestamp}-${rand}`;
         const propertyUniqueId = data.propertyUniqueId || `BID-${timestamp.toString().slice(-6)}`;
 
+        const photosList = Array.isArray(data.photos) ? data.photos.filter(Boolean) : (data.displayImage ? [data.displayImage] : []);
+        const coverImage = data.displayImage || (photosList.length > 0 ? photosList[0] : "");
+
         const newProperty = new Property({
             ...data,
             sourcePropertyId,
             propertyUniqueId,
+            photos: photosList,
+            displayImage: coverImage,
+            videos: sanitizeVideos(data.videos),
+            propertyDescription: data.propertyDescription || data.propertyTitle || "",
+            propertyTitle: data.propertyTitle || data.propertyDescription || data.propertyHeading || "",
             propertyPrice: Number(data.propertyPrice) || 0,
             sortPrice: Number(data.propertyPrice) || 0,
             area: Number(data.area) || undefined,
+            latitude: data.latitude !== undefined && data.latitude !== "" && !isNaN(Number(data.latitude)) ? Number(data.latitude) : undefined,
+            longitude: data.longitude !== undefined && data.longitude !== "" && !isNaN(Number(data.longitude)) ? Number(data.longitude) : undefined,
             isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
             createdOn: data.createdOn ? new Date(data.createdOn) : new Date(),
             lastSeenAt: new Date(),
@@ -1122,6 +1286,21 @@ app.put("/api/properties/:id", async (req, res) => {
         }
         if (updateData.area !== undefined) {
             updateData.area = Number(updateData.area) || undefined;
+        }
+        if (updateData.latitude !== undefined) {
+            updateData.latitude = updateData.latitude !== "" && !isNaN(Number(updateData.latitude)) ? Number(updateData.latitude) : null;
+        }
+        if (updateData.longitude !== undefined) {
+            updateData.longitude = updateData.longitude !== "" && !isNaN(Number(updateData.longitude)) ? Number(updateData.longitude) : null;
+        }
+        if (updateData.photos !== undefined) {
+            updateData.photos = Array.isArray(updateData.photos) ? updateData.photos.filter(Boolean) : (updateData.displayImage ? [updateData.displayImage] : []);
+            if (!updateData.displayImage && updateData.photos.length > 0) {
+                updateData.displayImage = updateData.photos[0];
+            }
+        }
+        if (updateData.videos !== undefined) {
+            updateData.videos = sanitizeVideos(updateData.videos);
         }
         updateData.lastSeenAt = new Date();
 
@@ -1535,13 +1714,13 @@ app.post("/api/inquiries", async (req, res) => {
     try {
         const { name, email, phone, subject, message, propertyId, propertyTitle, bankName, cityName, propertyPrice, type, priority } = req.body;
 
-        if (!name || !email) {
-            return res.status(400).json({ success: false, message: "Name and email are required" });
+        if (!name || !String(name).trim() || (!String(email || "").trim() && !String(phone || "").trim())) {
+            return res.status(400).json({ success: false, message: "Please enter your name and a phone number or email." });
         }
 
         const inquiry = new Inquiry({
             name: name.trim(),
-            email: email.trim(),
+            email: email ? email.trim() : "",
             phone: phone ? phone.trim() : "",
             subject: subject ? subject.trim() : "",
             message: message ? message.trim() : "Interested in bank auction property.",
@@ -1801,6 +1980,12 @@ app.get("/api/admin/export", async (req, res) => {
         res.status(500).json({ success: false, message: "Export failed", error: error.message });
     }
 });
+
+// ===============================
+// AI Assistant (POST /api/chat) — see chat.js
+// ===============================
+
+require("./chat")(app, { Property, mongoose });
 
 // ===============================
 // Start Server

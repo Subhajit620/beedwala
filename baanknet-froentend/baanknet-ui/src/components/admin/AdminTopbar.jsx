@@ -9,9 +9,6 @@ import {
     LogOut,
     ChevronDown,
     Shield,
-    Bell,
-    CheckCircle2,
-    Sparkles,
     X
 } from "lucide-react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
@@ -55,6 +52,7 @@ export default function AdminTopbar({ onOpenMobile, onOpenCommandPalette }) {
     const getPageTitle = () => {
         const path = location.pathname;
         if (path === "/admin") return "Dashboard Overview";
+        if (path === "/admin/fresh-properties") return "Fresh Properties";
         if (path === "/admin/properties") return "Properties Directory";
         if (path === "/admin/properties/new") return "Add New Auction Notice";
         if (path.startsWith("/admin/properties/edit")) return "Edit Property Notice";

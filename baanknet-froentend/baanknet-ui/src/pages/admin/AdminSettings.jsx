@@ -33,6 +33,7 @@ export default function AdminSettings() {
     };
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         checkHealth();
     }, []);
 

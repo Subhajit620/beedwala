@@ -1,26 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
     CopyCheck,
     Search,
     AlertTriangle,
     ShieldCheck,
-    Trash2,
-    Eye,
     CheckCircle2,
     RefreshCw,
     ExternalLink,
-    Landmark,
-    ArrowRight,
-    Sparkles,
-    Building2,
-    SlidersHorizontal
+    Sparkles
 } from "lucide-react";
 import { fetchDuplicateNotices, bulkPropertyAction } from "../../services/adminService";
 import { useApp } from "../../context/AppContext";
 
 export default function AdminDuplicates() {
-    const navigate = useNavigate();
     const { addToast } = useApp();
     const [duplicateGroups, setDuplicateGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -28,7 +21,7 @@ export default function AdminDuplicates() {
     const [search, setSearch] = useState("");
     const [resolvedGroups, setResolvedGroups] = useState(new Set());
 
-    const loadDuplicates = async () => {
+    const loadDuplicates = useCallback(async () => {
         try {
             setLoading(true);
             const res = await fetchDuplicateNotices();
@@ -41,11 +34,12 @@ export default function AdminDuplicates() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [addToast]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadDuplicates();
-    }, []);
+    }, [loadDuplicates]);
 
     // Filter duplicates by search
     const filteredGroups = duplicateGroups.filter((g) => {

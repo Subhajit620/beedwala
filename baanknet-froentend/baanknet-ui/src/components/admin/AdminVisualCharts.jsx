@@ -2,19 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     TrendingUp,
-    Building2,
     Landmark,
     PieChart as PieIcon,
     BarChart3,
-    Layers,
-    DollarSign,
     Users,
-    Sparkles,
-    CheckCircle2,
-    ArrowUpRight,
     ArrowRight
 } from "lucide-react";
-import { formatCompactINR, formatINR } from "../../utils/formatters";
 
 /**
  * 1. Valuation & Listings Growth Trend (Interactive Area & Line Chart)

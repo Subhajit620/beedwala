@@ -16,8 +16,7 @@ import {
     Landmark,
     CopyCheck,
     History,
-    X,
-    Users
+    X
 } from "lucide-react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import logoImg from "../../assets/logo.jpg";
@@ -36,14 +35,19 @@ export default function AdminSidebar({ mobileOpen, onCloseMobile, newInquiriesCo
                     icon: LayoutDashboard
                 },
                 {
-                    name: "All Properties",
+                    name: "Auction Properties",
                     path: "/admin/properties",
                     icon: Building2
                 },
                 {
-                    name: "Add New Property",
+                    name: "Add Auction Property",
                     path: "/admin/properties/new",
                     icon: PlusCircle
+                },
+                {
+                    name: "Fresh Properties",
+                    path: "/admin/fresh-properties",
+                    icon: Sparkles
                 },
                 {
                     name: "Partner Banks",

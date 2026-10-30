@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     Landmark,
     Search,
     TrendingUp,
     Building2,
-    Shield,
     ArrowUpRight,
     MapPin,
     Layers,
@@ -14,7 +13,6 @@ import {
     RefreshCw,
     CheckCircle2,
     Info,
-    ExternalLink,
     X
 } from "lucide-react";
 import { fetchBanksDirectory } from "../../services/adminService";
@@ -29,7 +27,7 @@ export default function AdminBanks() {
     const [sortBy, setSortBy] = useState("listings_desc");
     const [selectedBank, setSelectedBank] = useState(null);
 
-    const loadBanks = async () => {
+    const loadBanks = useCallback(async () => {
         try {
             setLoading(true);
             const res = await fetchBanksDirectory();
@@ -42,11 +40,12 @@ export default function AdminBanks() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [addToast]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadBanks();
-    }, []);
+    }, [loadBanks]);
 
     // Aggregated Overview Metrics
     const totalInstitutions = banks.length;
@@ -238,11 +237,6 @@ export default function AdminBanks() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {filteredBanks.map((bank) => {
                         const cleanBranches = (bank.branches || []).filter(Boolean);
-                        const cleanDepts = (bank.departments || []).filter(Boolean);
-                        const activePercent =
-                            bank.totalListings > 0
-                                ? Math.round(((bank.activeListings || bank.totalListings) / bank.totalListings) * 100)
-                                : 100;
 
                         return (
                             <div

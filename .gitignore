@@ -1,14 +1,22 @@
-
+# Environment files
 .env
 .env.*
 !.env.example
 
-.env
-.env.*
-!.env.example
-
-.vite/
+# Dependencies
 node_modules/
-.env
-.env.*
-!.env.example
+
+# Vite cache
+.vite/
+
+# Build files
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

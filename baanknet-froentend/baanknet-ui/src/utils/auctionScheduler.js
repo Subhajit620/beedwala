@@ -12,6 +12,11 @@ export function getAuctionSchedule(property) {
     const emdAmount = property.emdAmount && Number(property.emdAmount) > 0
         ? Number(property.emdAmount)
         : Math.round(price * 0.10); // Statutory 10% EMD
+    const bidIncrement = property.bidIncrement && Number(property.bidIncrement) > 0
+        ? Number(property.bidIncrement)
+        : 50000;
+    const emdSubmissionTime = property.emdSubmissionTime || "5:00 PM";
+    const auctionTime = property.auctionTime || "11:30 AM";
 
     const createdOnDate = property.createdOn ? new Date(property.createdOn) : new Date();
     const now = new Date();
@@ -68,10 +73,13 @@ export function getAuctionSchedule(property) {
 
     return {
         auctionDate,
+        auctionTime,
         emdSubmissionDate,
+        emdSubmissionTime,
         inspectionStartDate,
         inspectionEndDate,
         emdAmount,
+        bidIncrement,
         status,
         msToAuction,
         msToEmd

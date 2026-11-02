@@ -59,7 +59,12 @@ export default function AdminAnalytics() {
     const avgPrice = stats?.valuation?.avgPrice || 0;
     const maxPrice = stats?.valuation?.maxPrice || 0;
     const totalProperties = stats?.totalProperties || 0;
-    const totalBanks = stats?.totalBanks || 13;
+    const totalBanks = stats?.totalBanks || 0;
+    const topBankNames = (stats?.banksBreakdown || [])
+        .slice(0, 4)
+        .map((b) => b._id)
+        .filter(Boolean)
+        .join(", ");
 
     return (
         <div className="space-y-6 sm:space-y-8 animate-fade-in">
@@ -68,10 +73,10 @@ export default function AdminAnalytics() {
                 <div>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
                         <BarChart3 className="text-amber-500" size={26} />
-                        <span>Market Intelligence & Valuation Analytics</span>
+                        <span>Market Intelligence &amp; Valuation Analytics</span>
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500">
-                        Visual breakdown of portfolio reserve values, institutional bank volumes, price brackets, and buyer conversion.
+                        Live visual breakdown of portfolio reserve values, institutional bank volumes, price brackets, and buyer conversion.
                     </p>
                 </div>
 
@@ -104,7 +109,7 @@ export default function AdminAnalytics() {
                         {formatCompactINR(totalValuation)}
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1">
-                        Combined reserve pricing across {totalProperties} listings
+                        Combined reserve pricing across {totalProperties.toLocaleString("en-IN")} listings
                     </div>
                 </div>
 
@@ -116,7 +121,7 @@ export default function AdminAnalytics() {
                         {formatCompactINR(avgPrice)}
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1">
-                        Across residential & commercial sectors
+                        Across all active &amp; indexed categories
                     </div>
                 </div>
 
@@ -128,7 +133,7 @@ export default function AdminAnalytics() {
                         {formatCompactINR(maxPrice)}
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1">
-                        Prime industrial & commercial listing
+                        Maximum reserve price in database
                     </div>
                 </div>
 
@@ -139,31 +144,31 @@ export default function AdminAnalytics() {
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
                         {totalBanks}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-1">
-                        State Bank of India, PNB, Baroda, Canara
+                    <div className="text-[11px] text-slate-400 mt-1 truncate">
+                        {topBankNames || "Authorized partner banks"}
                     </div>
                 </div>
             </div>
 
             {/* Price Brackets Histogram & Lead Conversion Funnel */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PriceBracketHistogramChart />
-                <LeadConversionFunnelChart />
+                <PriceBracketHistogramChart stats={stats} />
+                <LeadConversionFunnelChart stats={stats} />
             </div>
 
             {/* Growth Trend Area Chart & Asset Distribution Donut */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-7">
-                    <ValuationTrendAreaChart />
+                    <ValuationTrendAreaChart stats={stats} />
                 </div>
                 <div className="lg:col-span-5">
-                    <AssetTypeDonutChart />
+                    <AssetTypeDonutChart stats={stats} />
                 </div>
             </div>
 
             {/* Full Width Bank Share Bar Chart */}
             <div>
-                <BankShareBarChart />
+                <BankShareBarChart stats={stats} />
             </div>
         </div>
     );

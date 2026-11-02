@@ -40,7 +40,9 @@ import DashboardQuickLaunchModal from "../../components/admin/DashboardQuickLaun
 import {
     ValuationTrendAreaChart,
     BankShareBarChart,
-    AssetTypeDonutChart
+    AssetTypeDonutChart,
+    PriceBracketHistogramChart,
+    LeadConversionFunnelChart
 } from "../../components/admin/AdminVisualCharts";
 
 export default function AdminDashboard() {
@@ -146,11 +148,11 @@ export default function AdminDashboard() {
         const cleanPhone = lead.phone.replace(/[^0-9]/g, "");
         const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
         const text = encodeURIComponent(
-            `*Greetings from Baanknet Auction Advisory Desk* 🏛️\n\n` +
+            `*Greetings from Bidwallah Advisory Desk* 🏛️\n\n` +
             `Hello *${lead.name}*,\n` +
-            `We received your inquiry regarding *${lead.propertyTitle || "Bank Auction Asset"}*.\n\n` +
-            `Our team is ready to provide the complete SARFAESI tender factsheet, inspection schedule, and bidder advisory.\n\n` +
-            `Best regards,\n*Baanknet Team*`
+            `We received your inquiry regarding *${lead.propertyTitle || "Property Listing"}*.\n\n` +
+            `Our team is ready to provide the complete property details, site visit schedule, and buyer assistance.\n\n` +
+            `Best regards,\n*Bidwallah Team*`
         );
         window.open(`https://wa.me/${formattedPhone}?text=${text}`, "_blank");
     };
@@ -266,58 +268,60 @@ export default function AdminDashboard() {
     const totalBanks = stats?.totalBanks || 0;
 
     return (
-        <div className="space-y-6 sm:space-y-8 animate-fade-in pb-10">
+        <div className="space-y-5 sm:space-y-7 animate-fade-in pb-6">
             {/* Top Welcome Banner with Live System Health & Action Controls */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 rounded-2xl sm:rounded-3xl bg-slate-950 p-5 sm:p-7 text-white border border-slate-800 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5 rounded-2xl sm:rounded-3xl bg-slate-950 p-4 sm:p-7 text-white border border-slate-800 shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl pointer-events-none"></div>
 
                 <div className="space-y-2 relative z-10 max-w-2xl">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-0.5 text-xs font-bold text-amber-400">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 sm:px-3 py-0.5 text-[11px] sm:text-xs font-bold text-amber-400">
                             <Sparkles size={13} />
-                            <span>Baanknet Executive Console</span>
+                            <span>Bidwallah Executive Console</span>
                         </div>
 
                         {/* Live Operational Status Indicator */}
-                        <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+                        <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-400">
                             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                             <span>All Systems Operational</span>
                         </div>
 
-                        <div className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                        <div className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-400 font-medium">
                             <Clock size={12} className="text-slate-500" />
                             <span>Updated: {lastUpdated}</span>
                         </div>
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    <h2 className="text-xl sm:text-3xl font-black tracking-tight text-white">
                         {greeting}, Administrator!
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                        Platform status: <span className="text-amber-400 font-bold">{totalProperties.toLocaleString("en-IN")}</span> verified bank notices indexed across{" "}
-                        <span className="text-white font-bold">{totalBanks} partner banks</span> with zero crawler bottlenecks.
+                        Platform status: <span className="text-amber-400 font-bold">{totalProperties.toLocaleString("en-IN")}</span> bank auction notices &amp;{" "}
+                        <span className="text-emerald-400 font-bold">{freshCount} fresh direct listings</span> across{" "}
+                        <span className="text-white font-bold">{totalBanks} partner banks</span>.
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 relative z-10 shrink-0">
+                {/* Responsive Action Buttons: 2-column grid on mobile, flex wrap on sm+ */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 relative z-10 shrink-0">
                     {/* Interactive Quick Launch & Welcome Hub Popup Trigger */}
                     <button
                         type="button"
                         onClick={() => setQuickLaunchOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3.5 py-2.5 text-xs font-black text-amber-300 hover:bg-amber-500/25 hover:text-white transition cursor-pointer animate-pulse-glow"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2.5 text-xs font-black text-amber-300 hover:bg-amber-500/25 hover:text-white transition cursor-pointer animate-pulse-glow"
                         title="Open Smart Quick Launch & Interactive Guide"
                     >
-                        <Zap size={15} className="text-amber-400" />
+                        <Zap size={15} className="text-amber-400 shrink-0" />
                         <span>Smart Hub</span>
                     </button>
 
                     {/* User Guide Toggle */}
                     <button
                         onClick={() => setShowHelpGuide(!showHelpGuide)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/90 px-3.5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer"
                         title="Toggle helpful quick guide for beginners"
                     >
-                        <HelpCircle size={15} className="text-amber-400" />
+                        <HelpCircle size={15} className="text-amber-400 shrink-0" />
                         <span>{showHelpGuide ? "Hide Guide" : "Quick Guide"}</span>
                         {showHelpGuide ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
@@ -326,29 +330,29 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => loadStats(true)}
                         disabled={refreshing}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer active:scale-95 disabled:opacity-50"
                         title="Refresh live dashboard numbers"
                     >
                         <RefreshCw size={14} className={refreshing ? "animate-spin text-amber-400" : "text-slate-400"} />
-                        <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
+                        <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
                     </button>
 
                     {/* Crawler Sync Trigger */}
                     <button
                         onClick={handleSync}
                         disabled={syncing}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 transition cursor-pointer active:scale-95 disabled:opacity-50"
                         title="Pull latest notices from bank portals"
                     >
                         <RefreshCw size={14} className={syncing ? "animate-spin text-amber-400" : "text-amber-500"} />
                         <span>{syncing ? "Syncing..." : "Sync Crawler"}</span>
                     </button>
 
-                    {/* Add Listing CTA (opens animated chooser popup for Fresh vs Auction) */}
+                    {/* Add Listing CTA (spans 2 columns on mobile for easy thumb tap) */}
                     <button
                         type="button"
                         onClick={() => setQuickLaunchOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-amber-500/20 transition cursor-pointer active:scale-95"
+                        className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-amber-500/20 transition cursor-pointer active:scale-95"
                     >
                         <Plus size={16} />
                         <span>+ Add Property</span>
@@ -358,11 +362,11 @@ export default function AdminDashboard() {
 
             {/* Quick User Guide Drawer (Collapsible & Friendly) */}
             {showHelpGuide && (
-                <div className="rounded-3xl border border-amber-200/90 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 p-5 sm:p-6 shadow-sm animate-scale-up text-xs text-slate-700 space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-amber-200/60">
+                <div className="rounded-2xl sm:rounded-3xl border border-amber-200/90 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 p-4 sm:p-6 shadow-sm animate-scale-up text-xs text-slate-700 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-amber-200/60">
                         <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
-                            <Sparkles size={16} className="text-amber-600" />
-                            <span>Admin Portal Quick Walkthrough & Pro Tips</span>
+                            <Sparkles size={16} className="text-amber-600 shrink-0" />
+                            <span>Admin Portal Quick Walkthrough &amp; Pro Tips</span>
                         </div>
                         <span className="rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-900 px-3 py-0.5 text-[10px] font-black uppercase">
                             Simple Mode Active
@@ -372,41 +376,41 @@ export default function AdminDashboard() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                         <div className="p-4 rounded-2xl bg-white border border-amber-100/90 shadow-2xs space-y-1.5">
                             <div className="font-black text-slate-900 flex items-center gap-2 text-xs">
-                                <span className="h-5 w-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px] font-black">1</span>
-                                <span>Properties Directory</span>
+                                <span className="h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">1</span>
+                                <span>Fresh vs Auction Lists</span>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-relaxed">
-                                Browse all 1,499+ bank auction notices. Toggle status switch to publish or unpublish instantly, or edit reserve prices.
+                                Add direct fixed-price listings under <strong>Fresh Properties</strong> or bank notices under <strong>Auction Properties</strong>.
                             </p>
                         </div>
 
                         <div className="p-4 rounded-2xl bg-white border border-amber-100/90 shadow-2xs space-y-1.5">
                             <div className="font-black text-slate-900 flex items-center gap-2 text-xs">
-                                <span className="h-5 w-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-black">2</span>
-                                <span>Buyer Leads & CRM</span>
+                                <span className="h-5 w-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">2</span>
+                                <span>Buyer Leads &amp; CRM</span>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-relaxed">
-                                Inquiries submitted by prospective investors arrive here. Click WhatsApp to send pre-filled auction tender factsheets.
+                                Visitor sign-ins and property inquiries arrive here. Tap WhatsApp or Call to connect with buyers in 1 click.
                             </p>
                         </div>
 
                         <div className="p-4 rounded-2xl bg-white border border-amber-100/90 shadow-2xs space-y-1.5">
                             <div className="font-black text-slate-900 flex items-center gap-2 text-xs">
-                                <span className="h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black">3</span>
+                                <span className="h-5 w-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px] font-black shrink-0">3</span>
                                 <span>Partner Banks Hub</span>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-relaxed">
-                                Breakdown of properties by bank (SBI, PNB, BoB, Canara, etc.) with cumulative valuation and branch nodal contacts.
+                                Breakdown of properties by bank (SBI, PNB, BoB, Canara, etc.) with cumulative valuation and branch contacts.
                             </p>
                         </div>
 
                         <div className="p-4 rounded-2xl bg-white border border-amber-100/90 shadow-2xs space-y-1.5">
                             <div className="font-black text-slate-900 flex items-center gap-2 text-xs">
-                                <span className="h-5 w-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px] font-black">4</span>
-                                <span>Command Palette (⌘K)</span>
+                                <span className="h-5 w-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">4</span>
+                                <span>Quick Search (⌘K)</span>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-relaxed">
-                                Press <kbd className="bg-slate-100 border border-slate-300 px-1 py-0.5 rounded font-mono font-bold text-slate-800">Ctrl+K</kbd> anywhere to search properties or jump to any page in one keystroke.
+                                Tap the Search icon or press <kbd className="bg-slate-100 border border-slate-300 px-1 py-0.5 rounded font-mono font-bold text-slate-800">Ctrl+K</kbd> to jump to any page or property.
                             </p>
                         </div>
                     </div>
@@ -415,7 +419,7 @@ export default function AdminDashboard() {
 
             {/* Error Banner if any */}
             {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 flex items-center justify-between gap-2 shadow-xs">
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 flex flex-wrap items-center justify-between gap-2 shadow-xs">
                     <div className="flex items-center gap-2">
                         <AlertCircle size={16} className="text-red-500 shrink-0" />
                         <span>{error}</span>
@@ -431,14 +435,14 @@ export default function AdminDashboard() {
 
             {/* Dashboard Instant Search Bar */}
             <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
-                <form onSubmit={handleDashboardSearch} className="flex flex-col sm:flex-row items-center gap-2">
+                <form onSubmit={handleDashboardSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <div className="relative flex-1 w-full">
                         <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         <input
                             type="text"
                             value={dashboardSearchQuery}
                             onChange={(e) => setDashboardSearchQuery(e.target.value)}
-                            placeholder="Quick search notices by title, bank (e.g. SBI), city (e.g. Kolkata), or SARFAESI ID..."
+                            placeholder="Search properties by title, bank (SBI, PNB), city, or ID..."
                             className="w-full h-11 pl-10 pr-9 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/15 transition"
                         />
                         {dashboardSearchQuery && (
@@ -463,10 +467,10 @@ export default function AdminDashboard() {
 
             {/* 1-Click Operations Hub (8 Large Action Cards) */}
             <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs">
-                <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-100">
                     <div className="flex items-center gap-2 font-black text-slate-900 text-sm sm:text-base">
-                        <Zap size={18} className="text-amber-500" />
-                        <span>Quick Actions & Shortcuts</span>
+                        <Zap size={18} className="text-amber-500 shrink-0" />
+                        <span>Quick Actions &amp; Shortcuts</span>
                     </div>
                     <span className="text-[11px] text-slate-400 font-medium">1-Click Common Operations</span>
                 </div>
@@ -580,11 +584,11 @@ export default function AdminDashboard() {
             </div>
 
             {/* Clickable KPI Metric Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
                 {/* 1. Total Properties */}
                 <div
                     onClick={() => navigate("/admin/properties")}
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs hover:border-amber-400 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
+                    className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs hover:border-amber-400 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
                     title="Click to view Properties Directory"
                 >
                     <div>
@@ -618,7 +622,7 @@ export default function AdminDashboard() {
                 {/* 2. Total Valuation */}
                 <div
                     onClick={() => navigate("/admin/analytics")}
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs hover:border-emerald-300 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
+                    className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs hover:border-emerald-300 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
                     title="Click to view Market Valuation Analytics"
                 >
                     <div>
@@ -649,7 +653,7 @@ export default function AdminDashboard() {
                 {/* 3. Partner Banks */}
                 <div
                     onClick={() => navigate("/admin/banks")}
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs hover:border-blue-300 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
+                    className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs hover:border-blue-300 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
                     title="Click to view Partner Banks Hub"
                 >
                     <div>
@@ -683,13 +687,13 @@ export default function AdminDashboard() {
                 {/* 4. Leads & Inquiries */}
                 <div
                     onClick={() => navigate("/admin/inquiries")}
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs hover:border-rose-300 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
+                    className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs hover:border-rose-300 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col justify-between"
                     title="Click to view Buyer Leads CRM"
                 >
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                Investor Leads
+                                Buyer Leads
                             </span>
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200/50 group-hover:bg-rose-500 group-hover:text-white transition">
                                 <Mail size={20} />
@@ -710,7 +714,7 @@ export default function AdminDashboard() {
                             )}
                         </div>
                         <div className="mt-2 text-[11px] text-slate-400">
-                            High-intent buyer inquiries requesting tenders
+                            Website sign-ins &amp; property inquiries
                         </div>
                     </div>
 
@@ -722,47 +726,56 @@ export default function AdminDashboard() {
             </div>
 
             {/* VISUAL GRAPHS & INTELLIGENCE ROW */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
                 {/* 1. Interactive Area Growth & Valuation Trend Chart (7 cols) */}
-                <div className="lg:col-span-7">
-                    <ValuationTrendAreaChart />
+                <div className="lg:col-span-7 min-w-0">
+                    <ValuationTrendAreaChart stats={stats} />
                 </div>
 
                 {/* 2. Asset Type Distribution Donut Chart (5 cols) */}
-                <div className="lg:col-span-5">
-                    <AssetTypeDonutChart />
+                <div className="lg:col-span-5 min-w-0">
+                    <AssetTypeDonutChart stats={stats} />
+                </div>
+            </div>
+
+            {/* Reserve Price Brackets & Buyer Leads Funnel Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                <div className="min-w-0">
+                    <PriceBracketHistogramChart stats={stats} />
+                </div>
+                <div className="min-w-0">
+                    <LeadConversionFunnelChart stats={stats} />
                 </div>
             </div>
 
             {/* Bank Market Share Visual Bar Chart */}
-            <div>
-                <BankShareBarChart />
+            <div className="min-w-0">
+                <BankShareBarChart stats={stats} />
             </div>
 
-            {/* Quick Bank Presets Filter Bar */}
+            {/* Quick Bank Presets Filter Bar (100% Real Database Counts) */}
             <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                        <Landmark size={14} className="text-amber-500" />
-                        <span>Filter Directory By Top Lending Institution</span>
+                        <Landmark size={14} className="text-amber-500 shrink-0" />
+                        <span>Filter Directory By Lending Bank</span>
                     </span>
                     <Link
                         to="/admin/banks"
                         className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline"
                     >
-                        View All Banks →
+                        View All {totalBanks} Banks →
                     </Link>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                     {[
                         { name: "All Listings", count: totalProperties, query: "" },
-                        { name: "State Bank of India", count: 824, query: "State Bank of India" },
-                        { name: "Punjab National Bank", count: 310, query: "Punjab National Bank" },
-                        { name: "Bank of Baroda", count: 215, query: "Bank of Baroda" },
-                        { name: "Canara Bank", count: 98, query: "Canara Bank" },
-                        { name: "Indian Bank", count: 35, query: "Indian Bank" },
-                        { name: "Bank of India", count: 20, query: "Bank of India" }
+                        ...(stats?.banksBreakdown || []).slice(0, 8).map((b) => ({
+                            name: b._id,
+                            count: b.count,
+                            query: b._id
+                        }))
                     ].map((item, idx) => (
                         <button
                             key={idx}
@@ -781,23 +794,23 @@ export default function AdminDashboard() {
             </div>
 
             {/* Two Column Actionable Layout: Inquiries Desk + Recent Properties */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
                 {/* 1. Recent Inquiries Desk with In-Place Status Toggle & 1-Click WhatsApp */}
-                <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs flex flex-col justify-between">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs flex flex-col justify-between min-w-0">
                     <div>
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
                             <div>
-                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    <Mail size={18} className="text-rose-500" />
+                                <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                                    <Mail size={18} className="text-rose-500 shrink-0" />
                                     <span>Recent Buyer Inquiries Desk</span>
                                 </h3>
-                                <p className="text-xs text-slate-400">
-                                    Click status pill to cycle New ➔ Contacted ➔ Closed
+                                <p className="text-[11px] sm:text-xs text-slate-400">
+                                    Tap status pill to cycle New ➔ Contacted ➔ Closed
                                 </p>
                             </div>
                             <Link
                                 to="/admin/inquiries"
-                                className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline"
+                                className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline shrink-0"
                             >
                                 View All ({totalInquiries}) →
                             </Link>
@@ -818,22 +831,22 @@ export default function AdminDashboard() {
                                             key={inq._id}
                                             className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 text-xs hover:border-amber-300 hover:bg-white transition shadow-2xs space-y-2"
                                         >
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <span className="font-bold text-slate-900 block text-xs">{inq.name}</span>
-                                                    <span className="text-[11px] text-slate-500">
+                                            <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="font-bold text-slate-900 block text-xs truncate">{inq.name}</span>
+                                                    <span className="text-[11px] text-slate-500 block truncate">
                                                         {inq.phone || inq.email} • {formatDate(inq.createdAt)}
                                                     </span>
                                                 </div>
 
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="flex items-center gap-1.5 shrink-0">
                                                     {/* In-Place Interactive Status Button */}
                                                     <button
                                                         type="button"
                                                         onClick={(e) => handleCycleInquiryStatus(e, inq)}
                                                         disabled={isUpdating}
                                                         title="Click to advance status (New -> Contacted -> Closed)"
-                                                        className={`rounded-lg px-2.5 py-0.5 text-[10px] font-black uppercase transition cursor-pointer active:scale-95 flex items-center gap-1 ${
+                                                        className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase transition cursor-pointer active:scale-95 flex items-center gap-1 ${
                                                             currentStatus === "new"
                                                                 ? "bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200"
                                                                 : currentStatus === "contacted"
@@ -849,7 +862,7 @@ export default function AdminDashboard() {
                                                     {inq.phone && (
                                                         <button
                                                             onClick={() => handleSendWhatsApp(inq)}
-                                                            title="Dispatch WhatsApp Factsheet"
+                                                            title="Dispatch WhatsApp Message"
                                                             className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 bg-white border border-slate-200 shadow-2xs cursor-pointer hover:border-emerald-300"
                                                         >
                                                             <Send size={13} />
@@ -871,7 +884,7 @@ export default function AdminDashboard() {
 
                                             <div className="text-[11px] text-slate-700 font-medium truncate pt-1 border-t border-slate-100 flex items-center gap-1.5">
                                                 <Building2 size={12} className="text-amber-500 shrink-0" />
-                                                <span className="truncate">{inq.propertyTitle || "Bank Auction Asset"}</span>
+                                                <span className="truncate">{inq.propertyTitle || "General Property Inquiry"}</span>
                                             </div>
                                         </div>
                                     );
@@ -892,21 +905,21 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* 2. Recently Indexed Notices with In-Place Status Toggle */}
-                <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs flex flex-col justify-between">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs flex flex-col justify-between min-w-0">
                     <div>
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
                             <div>
-                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    <Building2 size={18} className="text-amber-500" />
+                                <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                                    <Building2 size={18} className="text-amber-500 shrink-0" />
                                     <span>Recently Indexed Notices</span>
                                 </h3>
-                                <p className="text-xs text-slate-400">
-                                    Latest parsed circulars with 1-click edit & active toggle
+                                <p className="text-[11px] sm:text-xs text-slate-400">
+                                    Latest circulars with 1-click edit &amp; active toggle
                                 </p>
                             </div>
                             <Link
                                 to="/admin/properties"
-                                className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline"
+                                className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline shrink-0"
                             >
                                 View All ({totalProperties}) →
                             </Link>
@@ -926,7 +939,7 @@ export default function AdminDashboard() {
                                     return (
                                         <div
                                             key={propId}
-                                            className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 text-xs hover:border-amber-300 hover:bg-white transition shadow-2xs"
+                                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 text-xs hover:border-amber-300 hover:bg-white transition shadow-2xs"
                                         >
                                             <div className="overflow-hidden flex-1 min-w-0">
                                                 <div className="font-bold text-slate-900 truncate">
@@ -937,7 +950,7 @@ export default function AdminDashboard() {
                                                 </div>
                                             </div>
 
-                                            <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                                            <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-slate-200/70 pt-2 sm:pt-0">
                                                 <div className="font-black text-emerald-600">
                                                     ₹{(prop.propertyPrice || 0).toLocaleString("en-IN")}
                                                 </div>
@@ -1000,7 +1013,7 @@ export default function AdminDashboard() {
 
             {/* Bottom System Health & Crawler Automation Status Bar */}
             <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start sm:items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 shrink-0">
                         <Shield size={20} />
                     </div>
@@ -1010,24 +1023,24 @@ export default function AdminDashboard() {
                             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                         </div>
                         <div className="text-[11px] text-slate-500">
-                            Automatic bank portal synchronization active • 13 financial institutions connected with 100% clean title validation
+                            Automatic bank portal synchronization active • 13 financial institutions connected
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
                     <button
                         onClick={handleSync}
                         disabled={syncing}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3.5 py-2.5 sm:py-2 text-xs font-bold text-slate-700 transition cursor-pointer active:scale-95 disabled:opacity-50"
                     >
                         <RefreshCw size={13} className={syncing ? "animate-spin text-amber-500" : "text-slate-500"} />
-                        <span>{syncing ? "Syncing Portals..." : "Sync Portals Now"}</span>
+                        <span>{syncing ? "Syncing..." : "Sync Portals"}</span>
                     </button>
 
                     <Link
                         to="/admin/audit-logs"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 transition cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3.5 py-2.5 sm:py-2 text-xs font-bold text-slate-700 transition cursor-pointer"
                     >
                         <History size={13} className="text-slate-500" />
                         <span>Audit Trail</span>

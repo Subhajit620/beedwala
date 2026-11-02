@@ -10,7 +10,7 @@ import {
     ArrowRight,
     Shield,
     ChevronDown,
-    Compass
+    Compass, User, LogOut, Lock
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { fetchProperties } from "../services/propertyService";
@@ -40,7 +40,7 @@ export default function Navbar() {
         savedProperties,
         setIsWatchlistOpen,
         comparedProperties,
-        setIsCompareModalOpen
+        setIsCompareModalOpen, visitorUser, openVisitorLogin, logoutVisitor, visitorCountdown
     } = useApp();
 
     const navItems = [
@@ -55,7 +55,7 @@ export default function Navbar() {
 
     // Live search debouncing
     useEffect(() => {
-        if (!searchQueryReady) return;
+        if (!searchQueryReady || !visitorUser) return;
 
         const timeout = setTimeout(async () => {
             try {
@@ -73,7 +73,7 @@ export default function Navbar() {
         }, 220);
 
         return () => clearTimeout(timeout);
-    }, [searchQuery, searchQueryReady]);
+    }, [searchQuery, searchQueryReady, visitorUser]);
 
     // Close search dropdown on outside click
     useEffect(() => {
@@ -296,6 +296,29 @@ export default function Navbar() {
                             <span>Quick Guide</span>
                         </button>
 
+                        {visitorUser ? (
+                            <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-900">
+                                <User size={14} className="text-emerald-600" />
+                                <span className="max-w-[110px] truncate">{visitorUser.name}</span>
+                                <button
+                                    type="button"
+                                    onClick={logoutVisitor}
+                                    title="Sign out"
+                                    className="ml-1 rounded-md p-1 text-slate-400 hover:bg-emerald-100 hover:text-rose-600 transition cursor-pointer"
+                                >
+                                    <LogOut size={13} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => openVisitorLogin(false)}
+                                className="hidden md:inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-2 text-xs font-black text-slate-950 shadow-xs transition cursor-pointer active:scale-95"
+                            >
+                                <Lock size={13} />
+                                <span>Sign In{visitorCountdown > 0 ? ` (${visitorCountdown}s)` : ""}</span>
+                            </button>
+                        )}
                         {/* Explore CTA Button (Desktop) */}
                         <Link
                             to="/properties"

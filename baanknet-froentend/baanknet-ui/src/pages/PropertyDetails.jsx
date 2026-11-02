@@ -299,12 +299,54 @@ export default function PropertyDetails() {
                             </h3>
 
                             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
+                                {property.flatNo ? (
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
+                                        <span className="text-slate-400 text-xs block mb-1">Flat / Unit No.</span>
+                                        <span className="font-bold text-slate-800">{property.flatNo}</span>
+                                    </div>
+                                ) : null}
+
                                 {property.area ? (
                                     <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
-                                        <span className="text-slate-400 text-xs block mb-1">Super Area</span>
+                                        <span className="text-slate-400 text-xs block mb-1">Super Built-up Area</span>
                                         <span className="font-bold text-slate-800">
                                             {property.area} {property.unitOfMeasurement || "sq.ft"}
                                         </span>
+                                    </div>
+                                ) : null}
+
+                                {property.bedrooms ? (
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
+                                        <span className="text-slate-400 text-xs block mb-1">Bedrooms</span>
+                                        <span className="font-bold text-slate-800">{property.bedrooms} Bedrooms</span>
+                                    </div>
+                                ) : null}
+
+                                {property.bathrooms ? (
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
+                                        <span className="text-slate-400 text-xs block mb-1">Bathrooms</span>
+                                        <span className="font-bold text-slate-800">{property.bathrooms} Bathrooms</span>
+                                    </div>
+                                ) : null}
+
+                                {property.balconies ? (
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
+                                        <span className="text-slate-400 text-xs block mb-1">Balconies</span>
+                                        <span className="font-bold text-slate-800">{property.balconies} Balconies</span>
+                                    </div>
+                                ) : null}
+
+                                {property.drawingDining ? (
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100">
+                                        <span className="text-slate-400 text-xs block mb-1">Living / Dining</span>
+                                        <span className="font-bold text-slate-800">{property.drawingDining}</span>
+                                    </div>
+                                ) : null}
+
+                                {property.undividedLandShare ? (
+                                    <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4 border border-slate-100 xs:col-span-2">
+                                        <span className="text-slate-400 text-xs block mb-1">Undivided Land Share</span>
+                                        <span className="font-bold text-slate-800">{property.undividedLandShare}</span>
                                     </div>
                                 ) : null}
 
@@ -343,6 +385,26 @@ export default function PropertyDetails() {
                                     </div>
                                 ) : null}
                             </div>
+
+                            {Array.isArray(property.amenities) && property.amenities.length > 0 && (
+                                <div className="mt-5 pt-5 border-t border-slate-100">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                                        <CheckCircle2 size={14} className="text-emerald-600" />
+                                        <span>Property Amenities & Facilities</span>
+                                    </h4>
+                                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                        {property.amenities.map((amenity) => (
+                                            <div
+                                                key={amenity}
+                                                className="flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/60 px-3 py-2.5 text-xs font-bold text-emerald-950"
+                                            >
+                                                <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                                                <span className="leading-snug">{amenity}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Property Videos (only rendered when the listing has videos) */}
@@ -576,6 +638,18 @@ export default function PropertyDetails() {
                                         <span className="font-bold text-slate-800">
                                             {property.area} {property.unitOfMeasurement || "sq.ft"}
                                         </span>
+                                    </div>
+                                )}
+                                {property.contactPhone && (
+                                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                        <span className="text-slate-400 font-medium">Site Visit Contact</span>
+                                        <a
+                                            href={`tel:${String(property.contactPhone).replace(/\s+/g, "")}`}
+                                            className="font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                                        >
+                                            <Phone size={12} />
+                                            <span>{property.contactPhone}</span>
+                                        </a>
                                     </div>
                                 )}
                             </div>

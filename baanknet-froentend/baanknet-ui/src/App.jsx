@@ -1,7 +1,7 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from "react-router-dom";
 
-import { AppProvider } from "./context/AppContext";
+import { AppProvider, useApp } from "./context/AppContext";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 
 import Navbar from "./components/Navbar";
@@ -11,6 +11,8 @@ import WatchlistDrawer from "./components/WatchlistDrawer";
 import CompareModal from "./components/CompareModal";
 import FlashLoader from "./components/FlashLoader";
 import ChatAssistant from "./components/ChatAssistant";
+import VisitorLoginModal, { PropertyLockWall } from "./components/VisitorLoginModal";
+import LeadMagnetWidget from "./components/LeadMagnetWidget";
 
 // Public Marketplace Pages
 import Home from "./pages/Home";
@@ -37,17 +39,42 @@ import AdminCrawlerSync from "./pages/admin/AdminCrawlerSync";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
 
-// Public Marketplace Layout Wrapper
+// Public Marketplace Layout Wrapper with 15s Login Popup & Strict Property Gate
 function PublicLayout() {
+    const location = useLocation();
+    const { visitorUser, openVisitorLogin } = useApp();
+
+    const isPropertyRoute =
+        location.pathname.startsWith("/properties") ||
+        location.pathname.startsWith("/fresh-properties") ||
+        location.pathname.startsWith("/search");
+
+    useEffect(() => {
+        if (!visitorUser && isPropertyRoute) {
+            openVisitorLogin(true);
+        }
+    }, [visitorUser, isPropertyRoute, openVisitorLogin]);
+
     return (
         <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 selection:bg-amber-500 selection:text-slate-950">
             <Navbar />
             <div className="flex-1">
-                <Outlet />
+                {!visitorUser && isPropertyRoute ? (
+                    <div className="mx-auto max-w-5xl px-4 py-10 sm:py-16">
+                        <PropertyLockWall
+                            title="Sign In Required to View Properties"
+                            subtitle="To protect verified seller & bank notices, property listings are only visible to signed-in buyers. Enter your Name & Mobile Number to unlock all properties immediately."
+                        />
+                    </div>
+                ) : (
+                    <Outlet />
+                )}
             </div>
             <Footer />
 
             {/* Global Interactive Components */}
+            <VisitorLoginModal />
+            <LeadMagnetWidget />
             <Toast />
             <WatchlistDrawer />
             <CompareModal />

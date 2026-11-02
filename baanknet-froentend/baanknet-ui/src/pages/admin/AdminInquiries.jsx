@@ -32,6 +32,7 @@ export default function AdminInquiries() {
 
     // Filters & Pagination
     const [statusFilter, setStatusFilter] = useState("all");
+    const [sourceFilter, setSourceFilter] = useState("all");
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [limit] = useState(25);
@@ -150,17 +151,17 @@ export default function AdminInquiries() {
         const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
 
         const text = encodeURIComponent(
-            `*Greetings from Baanknet / Bidwallah Team* 🏛️\n\n` +
+            `*Greetings from Bidwallah Team* 🏛️\n\n` +
             `Hello *${lead.name}*,\n` +
-            `We received your inquiry regarding *${lead.propertyTitle || "Bank Auction Asset"}*.\n\n` +
-            `📋 *Property Notice Ref:* ${lead.propertyId || "SARFAESI"}\n` +
-            `💰 *Reserve Price:* ${lead.propertyPrice ? formatINR(lead.propertyPrice) : "On Request"}\n\n` +
-            `Our legal & auction advisory desk is available to share the complete tender document, encumbrance report, and inspection schedule.\n\n` +
-            `Best regards,\n*Baanknet Auction Advisory Desk*`
+            `We received your inquiry regarding *${lead.propertyTitle || "Property Listing"}*.\n\n` +
+            `📋 *Property Ref:* ${lead.propertyId || "Direct / SARFAESI"}\n` +
+            `💰 *Price:* ${lead.propertyPrice ? formatINR(lead.propertyPrice) : "On Request"}\n\n` +
+            `Our team is available to share the complete property details, photos/videos, and site inspection schedule.\n\n` +
+            `Best regards,\n*Bidwallah Advisory Desk*`
         );
 
         window.open(`https://wa.me/${formattedPhone}?text=${text}`, "_blank");
-        addToast("WhatsApp tender dispatch opened in new tab", "success");
+        addToast("WhatsApp message opened in new tab", "success");
     };
 
     // Export Leads to CSV
@@ -187,12 +188,37 @@ export default function AdminInquiries() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", `baanknet_leads_crm_${Date.now()}.csv`);
+        link.setAttribute("download", `bidwallah_leads_crm_${Date.now()}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         addToast("Leads exported to CSV", "success");
     };
+
+    // 1-Click Copy All Phone Numbers for WhatsApp Broadcast / Telecalling
+    const handleCopyAllPhones = () => {
+        const phones = Array.from(
+            new Set(
+                inquiries
+                    .map((i) => (i.phone || "").trim())
+                    .filter((p) => p.replace(/\D/g, "").length >= 10)
+            )
+        );
+        if (phones.length === 0) {
+            addToast("No phone numbers found in current list", "warning");
+            return;
+        }
+        try {
+            navigator.clipboard.writeText(phones.join(", "));
+            addToast(`Copied ${phones.length} unique buyer phone numbers!`, "success");
+        } catch {
+            addToast("Unable to copy phone numbers", "error");
+        }
+    };
+
+    const filteredInquiries = sourceFilter === "all"
+        ? inquiries
+        : inquiries.filter((inq) => (inq.type || "contact_message") === sourceFilter);
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -234,21 +260,21 @@ export default function AdminInquiries() {
     ];
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-5 sm:space-y-6 animate-fade-in">
             {/* Header & Controls */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-                        <Mail className="text-amber-500" size={26} />
-                        <span>Investor Inquiries & Leads CRM</span>
+                        <Mail className="text-amber-500 shrink-0" size={24} />
+                        <span>Buyer Inquiries &amp; Leads CRM</span>
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500">
-                        Manage prospective auction bidders, track diligence stages, dispatch WhatsApp tender packs, and log internal notes.
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Manage visitor sign-ins, Fresh Property enquiries, and auction bidders with 1-click WhatsApp &amp; phone call actions.
                     </p>
                 </div>
 
                 {/* Right Action Buttons */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {/* View Switcher: Table vs Kanban */}
                     <div className="flex items-center rounded-xl bg-slate-200/80 p-1">
                         <button
@@ -258,7 +284,7 @@ export default function AdminInquiries() {
                             }`}
                         >
                             <TableIcon size={14} />
-                            <span>Table</span>
+                            <span>List</span>
                         </button>
                         <button
                             onClick={() => setViewMode("kanban")}
@@ -272,17 +298,52 @@ export default function AdminInquiries() {
                     </div>
 
                     <button
+                        type="button"
+                        onClick={handleCopyAllPhones}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 shadow-xs transition cursor-pointer"
+                        title="Copy all buyer mobile numbers for WhatsApp Broadcast or calling"
+                    >
+                        <Phone size={14} className="text-emerald-600" />
+                        <span>Copy Phone Nos.</span>
+                    </button>
+
+                    <button
                         onClick={handleExportCSV}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 shadow-xs transition cursor-pointer"
                     >
                         <Download size={14} />
-                        <span className="hidden sm:inline">Export Leads</span>
+                        <span>Export CSV</span>
                     </button>
                 </div>
             </div>
 
-            {/* Quick Status Tabs (Table Mode) */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+            {/* Lead Source Channel Pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                    { id: "all", label: "All Channels" },
+                    { id: "visitor_login", label: "🔑 Website Sign-Ins" },
+                    { id: "property_inquiry", label: "🏛️ Auction Inquiries" },
+                    { id: "fresh_property", label: "🏡 Fresh Property Leads" },
+                    { id: "callback_request", label: "📞 Callback Requests" },
+                    { id: "whatsapp_alert", label: "🔔 WhatsApp Alert Subscribers" }
+                ].map((src) => (
+                    <button
+                        key={src.id}
+                        type="button"
+                        onClick={() => setSourceFilter(src.id)}
+                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                            sourceFilter === src.id
+                                ? "bg-amber-500 text-slate-950 font-black shadow-2xs"
+                                : "bg-white text-slate-600 hover:bg-amber-50 border border-slate-200"
+                        }`}
+                    >
+                        {src.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Quick Status Tabs */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-3">
                 {[
                     { id: "all", label: "All Leads", count: statusCounts.all || 0 },
                     { id: "new", label: "New Leads", count: statusCounts.new || 0, badgeColor: "bg-rose-500 text-white" },
@@ -297,7 +358,7 @@ export default function AdminInquiries() {
                             setStatusFilter(tab.id);
                             setPage(1);
                         }}
-                        className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                        className={`flex items-center gap-1.5 sm:gap-2 rounded-xl px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                             statusFilter === tab.id
                                 ? "bg-slate-950 text-amber-400 shadow-xs"
                                 : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
@@ -316,7 +377,7 @@ export default function AdminInquiries() {
             </div>
 
             {/* Search and Filters */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs">
                 <div className="relative">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -326,7 +387,7 @@ export default function AdminInquiries() {
                             setSearch(e.target.value);
                             setPage(1);
                         }}
-                        placeholder="Search leads by investor name, email, phone number, property title..."
+                        placeholder="Search leads by buyer name, phone number, email, or property title..."
                         className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/15 transition"
                     />
                 </div>
@@ -344,7 +405,7 @@ export default function AdminInquiries() {
                 </div>
             ) : viewMode === "kanban" ? (
                 /* KANBAN PIPELINE BOARD VIEW */
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     {kanbanStages.map((stage) => {
                         const stageLeads = inquiries.filter((inq) => inq.status === stage.id);
 
@@ -386,6 +447,7 @@ export default function AdminInquiries() {
 
                                                 <div className="mt-1 text-[11px] text-slate-500 truncate">
                                                     {lead.type === "fresh_property" && <span className="mr-1 font-black text-emerald-700">FRESH ·</span>}
+                                                    {lead.type === "visitor_login" && <span className="mr-1 font-black text-indigo-700">USER LOGIN ·</span>}
                                                     {lead.propertyTitle || "General Auction Inquiry"}
                                                 </div>
 
@@ -401,7 +463,7 @@ export default function AdminInquiries() {
                                                         {lead.phone && (
                                                             <button
                                                                 onClick={() => handleSendWhatsApp(lead)}
-                                                                title="Send WhatsApp Tender"
+                                                                title="Send WhatsApp Message"
                                                                 className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 transition"
                                                             >
                                                                 <Send size={13} />
@@ -434,136 +496,247 @@ export default function AdminInquiries() {
                         );
                     })}
                 </div>
-            ) : inquiries.length === 0 ? (
-                /* Empty Table State */
+            ) : filteredInquiries.length === 0 ? (
+                /* Empty State */
                 <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
                     <Mail size={40} className="mx-auto text-slate-300" />
                     <h3 className="mt-3 text-base font-bold text-slate-800">No customer inquiries found</h3>
                     <p className="mt-1 text-xs text-slate-500">
-                        Inquiries submitted from public auction factsheet modals will appear here in real-time.
+                        Visitor sign-ins and property inquiries will appear here in real-time.
                     </p>
                 </div>
             ) : (
-                /* TABLE VIEW */
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                                    <th className="py-3.5 px-4 sm:px-6">Investor / Contact</th>
-                                    <th className="py-3.5 px-4">Property Inquired</th>
-                                    <th className="py-3.5 px-4">Status & Stage</th>
-                                    <th className="py-3.5 px-4">Priority</th>
-                                    <th className="py-3.5 px-4">Received</th>
-                                    <th className="py-3.5 px-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {inquiries.map((inq) => (
-                                    <tr key={inq._id} className="hover:bg-slate-50/60 transition">
-                                        {/* Investor Profile */}
-                                        <td className="py-3.5 px-4 sm:px-6">
-                                            <div className="font-bold text-slate-900">{inq.name}</div>
-                                            <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                                                {inq.phone && (
-                                                    <a
-                                                        href={`tel:${inq.phone}`}
-                                                        className="hover:text-amber-600 flex items-center gap-1"
-                                                    >
-                                                        <Phone size={11} />
-                                                        <span>{inq.phone}</span>
-                                                    </a>
-                                                )}
-                                                {inq.email && (
-                                                    <a
-                                                        href={`mailto:${inq.email}`}
-                                                        className="hover:text-amber-600 flex items-center gap-1"
-                                                    >
-                                                        <Mail size={11} />
-                                                        <span>{inq.email}</span>
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </td>
+                <>
+                    {/* Mobile & Small Tablet Card View (< md) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
+                        {filteredInquiries.map((inq) => (
+                            <div
+                                key={inq._id}
+                                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-3"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-sm text-slate-900 truncate">{inq.name}</div>
+                                        <div className="text-[11px] text-slate-400">{formatDate(inq.createdAt)}</div>
+                                    </div>
+                                    {getPriorityBadge(inq.priority)}
+                                </div>
 
-                                        {/* Property Inquired */}
-                                        <td className="py-3.5 px-4 max-w-xs">
-                                            <div className="font-bold text-slate-800 truncate" title={inq.propertyTitle}>
-                                                {inq.type === "fresh_property" && (
-                                                    <span className="mr-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700">Fresh · Direct sale</span>
-                                                )}
-                                                {inq.propertyTitle || "General Auction Inquiry"}
-                                            </div>
-                                            {inq.propertyPrice ? (
-                                                <div className="text-[10px] font-semibold text-emerald-600">
-                                                    ₹{inq.propertyPrice.toLocaleString("en-IN")}
-                                                </div>
-                                            ) : null}
-                                        </td>
+                                {/* Phone & Email */}
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                                    {inq.phone && (
+                                        <a
+                                            href={`tel:${inq.phone}`}
+                                            className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline"
+                                        >
+                                            <Phone size={12} />
+                                            <span>{inq.phone}</span>
+                                        </a>
+                                    )}
+                                    {inq.email && (
+                                        <a
+                                            href={`mailto:${inq.email}`}
+                                            className="inline-flex items-center gap-1 text-slate-500 hover:text-amber-600 truncate max-w-[200px]"
+                                        >
+                                            <Mail size={12} className="shrink-0" />
+                                            <span className="truncate">{inq.email}</span>
+                                        </a>
+                                    )}
+                                </div>
 
-                                        {/* Status / Stage Dropdown */}
-                                        <td className="py-3.5 px-4 whitespace-nowrap">
-                                            <select
-                                                value={inq.status || "new"}
-                                                onChange={(e) => handleStatusUpdate(inq._id, e.target.value)}
-                                                className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 transition cursor-pointer"
+                                {/* Property / Lead Source */}
+                                <div className="rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-xs">
+                                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                        {inq.type === "fresh_property" && (
+                                            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700">
+                                                Fresh · Direct Sale
+                                            </span>
+                                        )}
+                                        {inq.type === "visitor_login" && (
+                                            <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-indigo-700">
+                                                User Login · Website Lead
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="font-bold text-slate-800 line-clamp-2">
+                                        {inq.propertyTitle || "General Property Inquiry"}
+                                    </div>
+                                    {inq.propertyPrice ? (
+                                        <div className="text-[11px] font-bold text-emerald-600 mt-0.5">
+                                            ₹{inq.propertyPrice.toLocaleString("en-IN")}
+                                        </div>
+                                    ) : null}
+                                </div>
+
+                                {/* Actions Row */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                    <select
+                                        value={inq.status || "new"}
+                                        onChange={(e) => handleStatusUpdate(inq._id, e.target.value)}
+                                        className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-500"
+                                    >
+                                        <option value="new">● New Lead</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="in_progress">Due Diligence</option>
+                                        <option value="converted">Won / Closed</option>
+                                        <option value="closed">Archived</option>
+                                    </select>
+
+                                    <div className="flex items-center gap-1.5">
+                                        {inq.phone && (
+                                            <button
+                                                onClick={() => handleSendWhatsApp(inq)}
+                                                title="WhatsApp Dispatch"
+                                                className="rounded-lg border border-emerald-200 bg-emerald-50 p-1.5 text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
                                             >
-                                                <option value="new">● New Lead</option>
-                                                <option value="contacted">Contacted</option>
-                                                <option value="in_progress">Due Diligence</option>
-                                                <option value="converted">Won / Closed</option>
-                                                <option value="closed">Archived</option>
-                                            </select>
-                                        </td>
+                                                <Send size={14} />
+                                            </button>
+                                        )}
 
-                                        {/* Priority */}
-                                        <td className="py-3.5 px-4 whitespace-nowrap">
-                                            {getPriorityBadge(inq.priority)}
-                                        </td>
+                                        <button
+                                            onClick={() => setActiveLead(inq)}
+                                            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                        >
+                                            View
+                                        </button>
 
-                                        {/* Date */}
-                                        <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 font-medium">
-                                            {formatDate(inq.createdAt)}
-                                        </td>
-
-                                        {/* Actions */}
-                                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                {inq.phone && (
-                                                    <button
-                                                        onClick={() => handleSendWhatsApp(inq)}
-                                                        title="WhatsApp Dispatch"
-                                                        className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 transition cursor-pointer"
-                                                    >
-                                                        <Send size={14} />
-                                                    </button>
-                                                )}
-
-                                                <button
-                                                    onClick={() => setActiveLead(inq)}
-                                                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-                                                >
-                                                    View Lead
-                                                </button>
-
-                                                <button
-                                                    onClick={() => handleDelete(inq._id)}
-                                                    title="Delete Lead"
-                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        <button
+                                            onClick={() => handleDelete(inq._id)}
+                                            title="Delete Lead"
+                                            className="rounded-lg border border-rose-200 bg-rose-50/60 p-1.5 text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
-                    {/* Pagination (Table Mode) */}
+                    {/* Desktop Table View (md+) */}
+                    <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                        <th className="py-3.5 px-4 sm:px-6">Investor / Contact</th>
+                                        <th className="py-3.5 px-4">Property Inquired</th>
+                                        <th className="py-3.5 px-4">Status &amp; Stage</th>
+                                        <th className="py-3.5 px-4">Priority</th>
+                                        <th className="py-3.5 px-4">Received</th>
+                                        <th className="py-3.5 px-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredInquiries.map((inq) => (
+                                        <tr key={inq._id} className="hover:bg-slate-50/60 transition">
+                                            {/* Investor Profile */}
+                                            <td className="py-3.5 px-4 sm:px-6">
+                                                <div className="font-bold text-slate-900">{inq.name}</div>
+                                                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                                                    {inq.phone && (
+                                                        <a
+                                                            href={`tel:${inq.phone}`}
+                                                            className="hover:text-amber-600 flex items-center gap-1"
+                                                        >
+                                                            <Phone size={11} />
+                                                            <span>{inq.phone}</span>
+                                                        </a>
+                                                    )}
+                                                    {inq.email && (
+                                                        <a
+                                                            href={`mailto:${inq.email}`}
+                                                            className="hover:text-amber-600 flex items-center gap-1"
+                                                        >
+                                                            <Mail size={11} />
+                                                            <span>{inq.email}</span>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* Property Inquired */}
+                                            <td className="py-3.5 px-4 max-w-xs">
+                                                <div className="font-bold text-slate-800 truncate" title={inq.propertyTitle}>
+                                                    {inq.type === "fresh_property" && (
+                                                        <span className="mr-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700">Fresh · Direct sale</span>
+                                                    )}
+                                                    {inq.type === "visitor_login" && (
+                                                        <span className="mr-1.5 rounded bg-indigo-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-indigo-700">User Login · Website Lead</span>
+                                                    )}
+                                                    {inq.propertyTitle || "General Auction Inquiry"}
+                                                </div>
+                                                {inq.propertyPrice ? (
+                                                    <div className="text-[10px] font-semibold text-emerald-600">
+                                                        ₹{inq.propertyPrice.toLocaleString("en-IN")}
+                                                    </div>
+                                                ) : null}
+                                            </td>
+
+                                            {/* Status / Stage Dropdown */}
+                                            <td className="py-3.5 px-4 whitespace-nowrap">
+                                                <select
+                                                    value={inq.status || "new"}
+                                                    onChange={(e) => handleStatusUpdate(inq._id, e.target.value)}
+                                                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 transition cursor-pointer"
+                                                >
+                                                    <option value="new">● New Lead</option>
+                                                    <option value="contacted">Contacted</option>
+                                                    <option value="in_progress">Due Diligence</option>
+                                                    <option value="converted">Won / Closed</option>
+                                                    <option value="closed">Archived</option>
+                                                </select>
+                                            </td>
+
+                                            {/* Priority */}
+                                            <td className="py-3.5 px-4 whitespace-nowrap">
+                                                {getPriorityBadge(inq.priority)}
+                                            </td>
+
+                                            {/* Date */}
+                                            <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 font-medium">
+                                                {formatDate(inq.createdAt)}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    {inq.phone && (
+                                                        <button
+                                                            onClick={() => handleSendWhatsApp(inq)}
+                                                            title="WhatsApp Dispatch"
+                                                            className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 transition cursor-pointer"
+                                                        >
+                                                            <Send size={14} />
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        onClick={() => setActiveLead(inq)}
+                                                        className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                                    >
+                                                        View Lead
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleDelete(inq._id)}
+                                                        title="Delete Lead"
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:px-6">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-6 shadow-xs">
                             <div className="text-xs font-semibold text-slate-500">
                                 Showing <span className="font-bold text-slate-900">{inquiries.length}</span> of{" "}
                                 <span className="font-bold text-slate-900">{total}</span> leads
@@ -589,21 +762,21 @@ export default function AdminInquiries() {
                             </div>
                         </div>
                     )}
-                </div>
+                </>
             )}
 
             {/* Lead Detail & Notes Drawer / Modal */}
             {activeLead && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fade-in">
-                    <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-scale-up">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-fade-in">
+                    <div className="w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-scale-up">
                         {/* Drawer Header */}
-                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 font-black text-amber-400">
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 sm:px-6 py-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 font-black text-amber-400">
                                     <User size={20} />
                                 </div>
-                                <div>
-                                    <h3 className="text-base font-black text-slate-900">{activeLead.name}</h3>
+                                <div className="min-w-0">
+                                    <h3 className="text-sm sm:text-base font-black text-slate-900 truncate">{activeLead.name}</h3>
                                     <p className="text-xs text-slate-500">
                                         Received on {formatDate(activeLead.createdAt)}
                                     </p>
@@ -612,21 +785,21 @@ export default function AdminInquiries() {
 
                             <button
                                 onClick={() => setActiveLead(null)}
-                                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-800 transition"
+                                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-800 transition shrink-0"
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
                         {/* Drawer Body */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
                             {/* Contact & Stage Overview */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
                                 <div>
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                                        Email & Phone
+                                        Email &amp; Phone
                                     </span>
-                                    <div className="text-xs font-bold text-slate-800 mt-1">
+                                    <div className="text-xs font-bold text-slate-800 mt-1 break-all">
                                         {activeLead.email || "No email provided"}
                                     </div>
                                     <div className="text-xs font-bold text-slate-800">
@@ -636,16 +809,16 @@ export default function AdminInquiries() {
 
                                 <div>
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                                        Pipeline Stage & Priority
+                                        Pipeline Stage &amp; Priority
                                     </span>
-                                    <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex flex-wrap items-center gap-2 mt-1">
                                         {getStatusBadge(activeLead.status)}
                                         {getPriorityBadge(activeLead.priority)}
                                         <select
                                             aria-label="Change lead priority"
                                             value={activeLead.priority || "low"}
                                             onChange={(e) => handlePriorityUpdate(activeLead._id, e.target.value)}
-                                            className="ml-auto h-7 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 outline-none focus:border-amber-500 cursor-pointer"
+                                            className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 outline-none focus:border-amber-500 cursor-pointer"
                                         >
                                             <option value="low">Low priority</option>
                                             <option value="medium">Medium priority</option>
@@ -660,7 +833,7 @@ export default function AdminInquiries() {
                             {activeLead.propertyTitle && (
                                 <div className="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4">
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
-                                        {activeLead.type === "fresh_property" ? "Fresh Property · Direct Sale (No Auction)" : "Inquired Property Notice"}
+                                        {activeLead.type === "fresh_property" ? "Fresh Property · Direct Sale (No Auction)" : "Inquired Property"}
                                     </span>
                                     <h4 className="text-sm font-bold text-slate-900 mt-1">
                                         {activeLead.propertyTitle}
@@ -680,7 +853,7 @@ export default function AdminInquiries() {
                                         Customer Inquiry Message
                                     </span>
                                     <div className="rounded-xl border border-slate-200 bg-white p-3.5 text-xs text-slate-700 leading-relaxed font-medium">
-                                        "{activeLead.message}"
+                                        &ldquo;{activeLead.message}&rdquo;
                                     </div>
                                 </div>
                             )}
@@ -707,7 +880,7 @@ export default function AdminInquiries() {
                                 </div>
 
                                 {/* Add Note Form */}
-                                <form onSubmit={handleAddNote} className="flex gap-2">
+                                <form onSubmit={handleAddNote} className="flex flex-col sm:flex-row gap-2">
                                     <input
                                         type="text"
                                         value={newNote}
@@ -727,7 +900,7 @@ export default function AdminInquiries() {
                         </div>
 
                         {/* Drawer Footer Actions */}
-                        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-4 sm:px-6 py-3.5 sm:py-4">
                             <button
                                 onClick={() => setActiveLead(null)}
                                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"

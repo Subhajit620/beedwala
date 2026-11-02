@@ -73,6 +73,17 @@ module.exports = function registerFreshProperties(app, mongoose, requireAdmin) {
     });
     app.put("/api/admin/fresh-properties/:id", requireAdmin, async (req, res) => {
         try {
+            await ensureConnected();
+            if (Array.isArray(req.body?.appendPhotos) && req.body.appendPhotos.length > 0) {
+                const validAppend = req.body.appendPhotos.filter((p) => typeof p === "string" && isValidPhoto(p));
+                const data = await FreshProperty.findByIdAndUpdate(
+                    req.params.id,
+                    { $push: { photos: { $each: validAppend, $slice: 15 } } },
+                    { new: true }
+                );
+                if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
+                return res.json({ success: true, data });
+            }
             const data = await FreshProperty.findByIdAndUpdate(req.params.id, { $set: payload(req.body) }, { new: true, runValidators: true });
             if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
             res.json({ success: true, data });
@@ -80,6 +91,7 @@ module.exports = function registerFreshProperties(app, mongoose, requireAdmin) {
     });
     app.delete("/api/admin/fresh-properties/:id", requireAdmin, async (req, res) => {
         try {
+            await ensureConnected();
             const data = await FreshProperty.findByIdAndDelete(req.params.id);
             if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
             res.json({ success: true });

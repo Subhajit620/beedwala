@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import CoverflowCarousel from "./CoverflowCarousel";
 
+
 export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal }) {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");

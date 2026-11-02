@@ -16,7 +16,8 @@ import {
     Star,
     Plus,
     Landmark,
-    Phone
+    Phone,
+    Calendar
 } from "lucide-react";
 import { fetchPropertyById } from "../../services/propertyService";
 import { createProperty, updateProperty } from "../../services/adminService";
@@ -33,6 +34,39 @@ const sampleGallery = [
     { label: "Master Bedroom", url: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=1200&auto=format&fit=crop&q=80" },
     { label: "Modular Kitchen", url: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1200&auto=format&fit=crop&q=80" },
     { label: "Balcony / Exterior", url: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&auto=format&fit=crop&q=80" }
+];
+
+// Property Amenities & Facilities options
+const PROPERTY_AMENITIES = [
+    { label: "Community Hall", icon: "🏛️" },
+    { label: "CCTV Surveillance", icon: "📹" },
+    { label: "24/7 Security", icon: "🛡️" },
+    { label: "Gym", icon: "🏋️" },
+    { label: "Indoor Playroom", icon: "🎮" },
+    { label: "Lift / Elevator", icon: "🛗" },
+    { label: "Covered Car Parking", icon: "🚗" },
+    { label: "24/7 Power Backup", icon: "⚡" },
+    { label: "24/7 Water Supply", icon: "💧" },
+    { label: "Landscaped Garden", icon: "🌳" },
+    { label: "Swimming Pool", icon: "🏊" },
+    { label: "Children's Play Area", icon: "👶" },
+    { label: "Fire Safety System", icon: "🔥" },
+    { label: "Intercom Facility", icon: "📞" }
+];
+
+const AUCTION_TIME_SLOTS = [
+    "10:00 AM",
+    "10:30 AM",
+    "11:00 AM",
+    "11:30 AM",
+    "12:00 PM",
+    "12:30 PM",
+    "1:00 PM",
+    "2:00 PM",
+    "3:00 PM",
+    "4:00 PM",
+    "5:00 PM",
+    "6:00 PM"
 ];
 
 export default function AdminPropertyForm() {
@@ -61,13 +95,24 @@ export default function AdminPropertyForm() {
         propertyType: "Residential",
         propertySubType: "Flat",
         propertyPrice: "",
+        emdAmount: "",
+        bidIncrement: "50000",
+        emdSubmissionDate: "",
+        emdSubmissionTime: "5:00 PM",
+        auctionDate: "",
+        auctionTime: "11:30 AM",
         propertyPossessionType: "Physical Possession",
         propertyOwnershipType: "Freehold",
         propTypeOfAction: "SARFAESI Act 2002",
+        flatNo: "",
         area: "",
         bedrooms: "",
         bathrooms: "",
-        contactPhone: "",
+        balconies: "",
+        kitchens: "",
+        drawingDining: "Drawing cum Dining",
+        undividedLandShare: "",
+        contactPhone: "7439409340",
         unitOfMeasurement: "sq.ft",
         cityName: "Kolkata",
         stateName: "West Bengal",
@@ -82,8 +127,10 @@ export default function AdminPropertyForm() {
         displayImage: sampleGallery[0].url,
         photos: [sampleGallery[0].url, sampleGallery[1].url, sampleGallery[2].url],
         videos: [],
+        amenities: ["Community Hall", "CCTV Surveillance", "24/7 Security", "Gym", "Indoor Playroom"],
         isActive: true
     });
+    const [customAmenity, setCustomAmenity] = useState("");
     const [videoUploading, setVideoUploading] = useState(false);
     // Fields just filled by "Use Current Location" / map pin (for a short highlight)
     const [autoFilledFields, setAutoFilledFields] = useState([]);
@@ -109,6 +156,12 @@ export default function AdminPropertyForm() {
                         ? p.photos
                         : (p.displayImage ? [p.displayImage] : [sampleGallery[0].url]);
 
+                    const toDateInput = (val) => {
+                        if (!val) return "";
+                        const d = new Date(val);
+                        return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+                    };
+
                     setFormData({
                         propertyHeading: p.propertyHeading || p.propertyTitle || "",
                         propertyDescription: p.propertyDescription || p.propertyTitle || "",
@@ -116,10 +169,24 @@ export default function AdminPropertyForm() {
                         propertyType: p.propertyType || "Residential",
                         propertySubType: p.propertySubType || "Flat",
                         propertyPrice: p.propertyPrice || "",
+                        emdAmount: p.emdAmount || "",
+                        bidIncrement: p.bidIncrement || "50000",
+                        emdSubmissionDate: toDateInput(p.emdSubmissionDate),
+                        emdSubmissionTime: p.emdSubmissionTime || "5:00 PM",
+                        auctionDate: toDateInput(p.auctionDate),
+                        auctionTime: p.auctionTime || "11:30 AM",
                         propertyPossessionType: p.propertyPossessionType || "Physical Possession",
                         propertyOwnershipType: p.propertyOwnershipType || "Freehold",
                         propTypeOfAction: p.propTypeOfAction || "SARFAESI Act 2002",
+                        flatNo: p.flatNo || "",
                         area: p.area || "",
+                        bedrooms: p.bedrooms ?? "",
+                        bathrooms: p.bathrooms ?? "",
+                        balconies: p.balconies ?? "",
+                        kitchens: p.kitchens ?? "",
+                        drawingDining: p.drawingDining || "Drawing cum Dining",
+                        undividedLandShare: p.undividedLandShare || "",
+                        contactPhone: p.contactPhone || "7439409340",
                         unitOfMeasurement: p.unitOfMeasurement || "sq.ft",
                         cityName: p.cityName || p.city || "Kolkata",
                         stateName: p.stateName || "West Bengal",
@@ -134,6 +201,9 @@ export default function AdminPropertyForm() {
                         displayImage: p.displayImage || loadedPhotos[0] || sampleGallery[0].url,
                         photos: loadedPhotos,
                         videos: Array.isArray(p.videos) ? p.videos.filter((v) => v && v.url) : [],
+                        amenities: Array.isArray(p.amenities) && p.amenities.length > 0
+                            ? p.amenities
+                            : ["Community Hall", "CCTV Surveillance", "24/7 Security", "Gym", "Indoor Playroom"],
                         isActive: p.isActive !== undefined ? p.isActive : true
                     });
                 }
@@ -152,44 +222,163 @@ export default function AdminPropertyForm() {
     }, [id, isEditMode]);
 
     const handleFieldChange = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        setFormData((prev) => {
+            if (field === "propertyPrice") {
+                const prevPrice = Number(prev.propertyPrice) || 0;
+                const nextPrice = Number(value) || 0;
+                const prevEmd = Number(prev.emdAmount) || 0;
+                const wasAutoTenPercent = prev.emdAmount === "" || (prevPrice > 0 && prevEmd === Math.round(prevPrice * 0.1));
+                return {
+                    ...prev,
+                    propertyPrice: value,
+                    emdAmount: wasAutoTenPercent
+                        ? (nextPrice > 0 ? Math.round(nextPrice * 0.1) : "")
+                        : prev.emdAmount
+                };
+            }
+            return { ...prev, [field]: value };
+        });
     };
 
-    // 1-Click Sample Pre-filler with full gallery
+    // Format a YYYY-MM-DD date string into "12th November 2026"
+    const formatOrdinalDate = (dateStr) => {
+        if (!dateStr) return "To Be Announced";
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = d.getDate();
+        const suffix =
+            day % 10 === 1 && day !== 11
+                ? "st"
+                : day % 10 === 2 && day !== 12
+                ? "nd"
+                : day % 10 === 3 && day !== 13
+                ? "rd"
+                : "th";
+        const month = d.toLocaleDateString("en-IN", { month: "long" });
+        return `${day}${suffix} ${month} ${d.getFullYear()}`;
+    };
+
+    const buildFormattedNoticeText = (d) => {
+        const priceNum = Number(d.propertyPrice) || 0;
+        const areaNum = Number(d.area) || 0;
+        const ratePerSqFt = priceNum > 0 && areaNum > 0 ? Math.round(priceNum / areaNum) : 0;
+        const emdNum = Number(d.emdAmount) || (priceNum > 0 ? Math.round(priceNum * 0.1) : 0);
+        const bidIncNum = Number(d.bidIncrement) || 50000;
+        const cityUpper = (d.cityName || "KOLKATA").toUpperCase();
+
+        const propLines = [
+            d.flatNo ? `- Flat No.: ${d.flatNo}` : null,
+            areaNum > 0 ? `- Super Built-up Area: ${areaNum.toLocaleString("en-IN")} Sq. Ft.` : null,
+            d.bedrooms ? `- ${d.bedrooms} Bedrooms` : null,
+            d.drawingDining ? `- ${d.drawingDining}` : null,
+            d.kitchens ? `- ${d.kitchens} Kitchen${Number(d.kitchens) > 1 ? "s" : ""}` : null,
+            d.bathrooms ? `- ${d.bathrooms} Bathrooms` : null,
+            d.balconies ? `- ${d.balconies} Balconies` : null,
+            d.undividedLandShare ? `- Undivided Land Share: ${d.undividedLandShare}` : null,
+            `- Possession: ${(d.propertyPossessionType || "Physical").replace(/\s*Possession$/i, "")}`
+        ].filter(Boolean);
+
+        const selectedAmenities = Array.isArray(d.amenities) ? d.amenities.filter(Boolean) : [];
+        const amenityLines = selectedAmenities.length > 0
+            ? [``, `✨ Amenities:`, ...selectedAmenities.map((a) => `- ${a}`)]
+            : [];
+
+        return [
+            `🏠 BANK AUCTION PROPERTY – ${cityUpper}`,
+            ``,
+            d.borrowerName ? `🔹 Borrower Name: ${d.borrowerName}` : null,
+            `🔹 Bank Name: ${d.bankName || "Authorized Bank"}`,
+            `🔹 Property Type: ${d.propertySubType || d.propertyType || "Residential Flat"}`,
+            `📍 Location: ${[d.locality, d.cityName].filter(Boolean).join(", ")}${d.pincode ? ` – ${d.pincode}` : ""}`,
+            ``,
+            `🏢 Property Details:`,
+            ``,
+            ...propLines,
+            ...amenityLines,
+            ``,
+            `💰 Auction Details:`,
+            ``,
+            `- Reserve Price: ₹${priceNum.toLocaleString("en-IN")}`,
+            ratePerSqFt > 0 ? `- Price per Sq. Ft.: Approx. ₹${ratePerSqFt.toLocaleString("en-IN")}` : null,
+            `- EMD Amount: ₹${emdNum.toLocaleString("en-IN")}`,
+            `- Bid Increment: ₹${bidIncNum.toLocaleString("en-IN")}`,
+            ``,
+            `📅 EMD Submission Last Date: ${formatOrdinalDate(d.emdSubmissionDate)} (${d.emdSubmissionTime || "5:00 PM"})`,
+            ``,
+            `🔨 Auction Date: ${formatOrdinalDate(d.auctionDate)}`,
+            `⏰ Auction Time: ${d.auctionTime || "11:30 AM"}`,
+            ``,
+            `📞 For More Details & Site Visit:`,
+            `${d.contactPhone || "7439409340"}`,
+            ``,
+            `⚡ Attractive Bank Auction Opportunity in ${d.locality || d.cityName || "Kolkata"}!`,
+            ``,
+            `Note: This is a Bank Auction Property, not an owner sale.`
+        ]
+            .filter((line) => line !== null)
+            .join("\n");
+    };
+
+    // 1-Click Sample Pre-filler with the exact Kolkata Bank Auction Notice format
     const handleFillSample = () => {
-        const timestamp = Date.now().toString().slice(-4);
-        const sampleDesc = `Spacious and well-ventilated 3 BHK residential apartment situated in the heart of Salt Lake Sector V. Features 3 bedrooms, 2 balconies, a modern modular kitchen, and 1 dedicated covered car parking space. Located in a secured gated community with 24/7 power backup, dual passenger elevators, and CCTV surveillance. Excellent connectivity to major IT parks, metro stations, and public transit. Statutory auction sale under SARFAESI Act 2002.`;
-
         const samplePics = sampleGallery.map((item) => item.url);
-
-        setFormData({
-            propertyHeading: `3 BHK Luxury Flat in Salt Lake Sector V (#${timestamp})`,
-            propertyDescription: sampleDesc,
-            propertyTitle: sampleDesc,
+        const sampleState = {
+            propertyHeading: `3 BHK Residential Flat in 176, Kanango Park, Garia, Kolkata`,
             propertyType: "Residential",
-            propertySubType: "Flat",
-            propertyPrice: 4850000,
+            propertySubType: "3 BHK Residential Flat",
+            propertyPrice: 5250000,
+            emdAmount: 525000,
+            bidIncrement: 50000,
+            emdSubmissionDate: "2026-11-12",
+            emdSubmissionTime: "5:00 PM",
+            auctionDate: "2026-11-13",
+            auctionTime: "11:30 AM",
             propertyPossessionType: "Physical Possession",
             propertyOwnershipType: "Freehold",
             propTypeOfAction: "SARFAESI Act 2002",
-            area: 1350,
+            flatNo: "3A, 3rd Floor",
+            area: 1584,
+            bedrooms: 3,
+            bathrooms: 2,
+            balconies: 3,
+            kitchens: 1,
+            drawingDining: "Drawing cum Dining",
+            undividedLandShare: "2 Cottah 15 Chittak 38 Sq. Ft.",
+            contactPhone: "7439409340",
             unitOfMeasurement: "sq.ft",
             cityName: "Kolkata",
             stateName: "West Bengal",
-            locality: "Salt Lake Sector V",
-            pincode: "700091",
-            latitude: 22.5867,
-            longitude: 88.4178,
-            bankName: "State Bank of India",
-            bankAddress: "SBI SARB Branch, Middleton Street, Kolkata 700071",
+            locality: "176, Kanango Park, Garia",
+            pincode: "700084",
+            latitude: 22.4665,
+            longitude: 88.3915,
+            bankName: "Canara Bank",
+            bankAddress: "Canara Bank ARM Branch, Kolkata",
             departmentName: "Stressed Assets Management Branch",
-            borrowerName: "Eastern Infra Holdings Pvt Ltd",
+            borrowerName: "Prasenjeet Sidhanta",
             displayImage: samplePics[0],
             photos: samplePics,
             videos: [],
+            amenities: [
+                "Community Hall",
+                "CCTV Surveillance",
+                "24/7 Security",
+                "Gym",
+                "Indoor Playroom",
+                "Lift / Elevator",
+                "Covered Car Parking",
+                "24/7 Power Backup"
+            ],
             isActive: true
+        };
+        const formattedNotice = buildFormattedNoticeText(sampleState);
+
+        setFormData({
+            ...sampleState,
+            propertyDescription: formattedNotice,
+            propertyTitle: formattedNotice
         });
-        addToast("Sample property & 4-photo gallery filled!", "info");
+        addToast("Filled Garia Canara Bank 3 BHK Auction Notice & gallery!", "info");
     };
 
     // Device Image Upload Processor (Multiple Files with Canvas Compression)
@@ -216,27 +405,34 @@ export default function AdminPropertyForm() {
                 reader.onload = (event) => {
                     const img = new window.Image();
                     img.onload = () => {
-                        const maxDim = 1000;
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > maxDim || height > maxDim) {
-                            if (width > height) {
-                                height = Math.round((height * maxDim) / width);
-                                width = maxDim;
-                            } else {
-                                width = Math.round((width * maxDim) / height);
-                                height = maxDim;
+                        const encodeAt = (maxDim, quality) => {
+                            let width = img.width;
+                            let height = img.height;
+                            if (width > maxDim || height > maxDim) {
+                                if (width > height) {
+                                    height = Math.round((height * maxDim) / width);
+                                    width = maxDim;
+                                } else {
+                                    width = Math.round((width * maxDim) / height);
+                                    height = maxDim;
+                                }
                             }
+                            const canvas = document.createElement("canvas");
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext("2d");
+                            ctx.drawImage(img, 0, 0, width, height);
+                            return canvas.toDataURL("image/jpeg", quality);
+                        };
+
+                        // Adaptive compression: keep each photo under ~130 KB base64 so requests stay fast & well below proxy limits
+                        let compressed = encodeAt(960, 0.72);
+                        if (compressed.length > 140000) {
+                            compressed = encodeAt(800, 0.62);
                         }
-
-                        const canvas = document.createElement("canvas");
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext("2d");
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        const compressed = canvas.toDataURL("image/jpeg", 0.75);
+                        if (compressed.length > 140000) {
+                            compressed = encodeAt(680, 0.52);
+                        }
                         resolve(compressed);
                     };
                     img.onerror = () => resolve(null);
@@ -445,11 +641,12 @@ export default function AdminPropertyForm() {
                     if (s.includes("residential") || s.includes("flat") || s.includes("apartment")) return "Apartment";
                     return "Other";
                 };
-                const features = manualText
+                const selectedAmenities = Array.isArray(formData.amenities) ? formData.amenities.filter(Boolean) : [];
+                const textFeatures = manualText
                     .split("\n")
                     .map((l) => l.replace(/^[•*-]\s*/, "").trim())
-                    .filter((l) => l && l.length <= 150)
-                    .slice(0, 15);
+                    .filter((l) => l && l.length <= 150);
+                const features = Array.from(new Set([...selectedAmenities, ...textFeatures])).slice(0, 15);
                 const freshPayload = {
                     title: formData.propertyHeading.trim().slice(0, 200),
                     description: manualText.slice(0, 10000),
@@ -481,11 +678,36 @@ export default function AdminPropertyForm() {
                 propertyDescription: manualText,
                 propertyTitle: manualText || formData.propertyHeading.trim(),
                 propertyPrice: Number(formData.propertyPrice) || 0,
+                emdAmount: formData.emdAmount !== "" && !isNaN(Number(formData.emdAmount))
+                    ? Number(formData.emdAmount)
+                    : (isEditMode ? "" : undefined),
+                bidIncrement: formData.bidIncrement !== "" && !isNaN(Number(formData.bidIncrement))
+                    ? Number(formData.bidIncrement)
+                    : (isEditMode ? "" : undefined),
+                emdSubmissionDate: formData.emdSubmissionDate
+                    ? `${formData.emdSubmissionDate}T17:00:00.000+05:30`
+                    : (isEditMode ? "" : undefined),
+                emdSubmissionTime: (formData.emdSubmissionTime || "5:00 PM").trim(),
+                auctionDate: formData.auctionDate
+                    ? `${formData.auctionDate}T11:30:00.000+05:30`
+                    : (isEditMode ? "" : undefined),
+                auctionTime: (formData.auctionTime || "11:30 AM").trim(),
+                flatNo: (formData.flatNo || "").trim(),
+                bedrooms: formData.bedrooms !== "" && !isNaN(Number(formData.bedrooms)) ? Number(formData.bedrooms) : (isEditMode ? "" : undefined),
+                bathrooms: formData.bathrooms !== "" && !isNaN(Number(formData.bathrooms)) ? Number(formData.bathrooms) : (isEditMode ? "" : undefined),
+                balconies: formData.balconies !== "" && !isNaN(Number(formData.balconies)) ? Number(formData.balconies) : (isEditMode ? "" : undefined),
+                kitchens: formData.kitchens !== "" && !isNaN(Number(formData.kitchens)) ? Number(formData.kitchens) : (isEditMode ? "" : undefined),
+                drawingDining: (formData.drawingDining || "").trim(),
+                undividedLandShare: (formData.undividedLandShare || "").trim(),
+                contactPhone: (formData.contactPhone || "").trim(),
                 area: formData.area ? Number(formData.area) : undefined,
                 displayImage: coverImage,
                 photos: currentPhotos.length > 0 ? currentPhotos : (coverImage ? [coverImage] : []),
                 videos: Array.isArray(formData.videos)
                     ? formData.videos.map((v) => ({ ...v, title: (v.title || "").trim() }))
+                    : [],
+                amenities: Array.isArray(formData.amenities)
+                    ? formData.amenities.map((a) => String(a || "").trim()).filter(Boolean)
                     : [],
                 // Empty → "" in edit mode so the server clears a previously saved pin
                 latitude: formData.latitude !== "" && !isNaN(Number(formData.latitude)) ? Number(formData.latitude) : (isEditMode ? "" : undefined),
@@ -552,12 +774,12 @@ export default function AdminPropertyForm() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
                     {!isEditMode && (
                         <button
                             type="button"
                             onClick={handleFillSample}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition cursor-pointer"
+                            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 sm:py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition cursor-pointer"
                         >
                             <Sparkles size={14} className="text-amber-600" />
                             <span>⚡ Fill Sample</span>
@@ -568,7 +790,7 @@ export default function AdminPropertyForm() {
                         type="button"
                         onClick={handleSubmit}
                         disabled={saving || videoUploading}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-5 py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 transition cursor-pointer shadow-md disabled:opacity-50 active:scale-95"
+                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-5 py-2.5 sm:py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 transition cursor-pointer shadow-md disabled:opacity-50 active:scale-95"
                     >
                         <Save size={15} />
                         <span>
@@ -740,9 +962,14 @@ export default function AdminPropertyForm() {
                                     type="number"
                                     value={formData.area}
                                     onChange={(e) => handleFieldChange("area", e.target.value)}
-                                    placeholder="e.g. 1250"
+                                    placeholder="e.g. 1584"
                                     className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white transition"
                                 />
+                                {priceNumber > 0 && Number(formData.area) > 0 && (
+                                    <span className="text-[10px] font-bold text-amber-700 mt-1 block truncate">
+                                        Approx. ₹{Math.round(priceNumber / Number(formData.area)).toLocaleString("en-IN")} / sq.ft
+                                    </span>
+                                )}
                             </div>
 
                             {isFreshMode ? (
@@ -789,6 +1016,212 @@ export default function AdminPropertyForm() {
                                 </div>
                             )}
                         </div>
+
+                        {/* EMD Submission Date, Auction Date, Auction Time & EMD Amount (Auction Mode Only) */}
+                        {!isFreshMode && (
+                            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-3.5 sm:p-4 space-y-3.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                                        <Calendar size={14} className="text-amber-600" />
+                                        <span>📅 EMD Submission Last Date, 🔨 Auction Date & ⏰ Auction Time</span>
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        {[
+                                            { label: "+7 Days", days: 7 },
+                                            { label: "+14 Days", days: 14 },
+                                            { label: "+30 Days", days: 30 }
+                                        ].map((preset) => (
+                                            <button
+                                                key={preset.days}
+                                                type="button"
+                                                onClick={() => {
+                                                    const emd = new Date(Date.now() + preset.days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                                                    const auc = new Date(Date.now() + (preset.days + 1) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        emdSubmissionDate: emd,
+                                                        auctionDate: auc,
+                                                        emdAmount: prev.emdAmount || (Number(prev.propertyPrice) > 0 ? Math.round(Number(prev.propertyPrice) * 0.1) : "")
+                                                    }));
+                                                }}
+                                                className="rounded-lg border border-amber-300 bg-white hover:bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 transition cursor-pointer"
+                                            >
+                                                {preset.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Row 1: EMD Submission Last Date + EMD Cutoff Time + Auction Date + Auction Time */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div>
+                                        <label htmlFor="emd-submission-date" className="block text-xs font-bold text-slate-700 mb-1">
+                                            📅 EMD Submission Last Date
+                                        </label>
+                                        <input
+                                            id="emd-submission-date"
+                                            type="date"
+                                            value={formData.emdSubmissionDate}
+                                            onChange={(e) => handleFieldChange("emdSubmissionDate", e.target.value)}
+                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-500 transition cursor-pointer"
+                                        />
+                                        <span className="mt-1 block text-[10px] text-rose-600 font-semibold">
+                                            {formData.emdSubmissionDate ? formatOrdinalDate(formData.emdSubmissionDate) : "Select last date for EMD"}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="emd-submission-time" className="block text-xs font-bold text-slate-700 mb-1">
+                                            ⏰ EMD Cutoff Time
+                                        </label>
+                                        <select
+                                            id="emd-submission-time"
+                                            value={formData.emdSubmissionTime || "5:00 PM"}
+                                            onChange={(e) => handleFieldChange("emdSubmissionTime", e.target.value)}
+                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-500 transition cursor-pointer"
+                                        >
+                                            {!AUCTION_TIME_SLOTS.includes(formData.emdSubmissionTime || "5:00 PM") && (
+                                                <option value={formData.emdSubmissionTime}>{formData.emdSubmissionTime}</option>
+                                            )}
+                                            {AUCTION_TIME_SLOTS.map((slot) => (
+                                                <option key={slot} value={slot}>
+                                                    {slot}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <span className="mt-1 block text-[10px] text-slate-500 font-medium">
+                                            Default: 5:00 PM
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="auction-date" className="block text-xs font-bold text-slate-700 mb-1">
+                                            🔨 Auction Date
+                                        </label>
+                                        <input
+                                            id="auction-date"
+                                            type="date"
+                                            value={formData.auctionDate}
+                                            onChange={(e) => {
+                                                const nextAuction = e.target.value;
+                                                setFormData((prev) => {
+                                                    let nextEmd = prev.emdSubmissionDate;
+                                                    if (!nextEmd && nextAuction) {
+                                                        const d = new Date(nextAuction);
+                                                        if (!isNaN(d.getTime())) {
+                                                            d.setDate(d.getDate() - 1);
+                                                            nextEmd = d.toISOString().slice(0, 10);
+                                                        }
+                                                    }
+                                                    return {
+                                                        ...prev,
+                                                        auctionDate: nextAuction,
+                                                        emdSubmissionDate: nextEmd
+                                                    };
+                                                });
+                                            }}
+                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-500 transition cursor-pointer"
+                                        />
+                                        <span className="mt-1 block text-[10px] text-amber-800 font-semibold">
+                                            {formData.auctionDate ? formatOrdinalDate(formData.auctionDate) : "Select auction date"}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="auction-time" className="block text-xs font-bold text-slate-700 mb-1">
+                                            ⏰ Auction Time
+                                        </label>
+                                        <select
+                                            id="auction-time"
+                                            value={formData.auctionTime || "11:30 AM"}
+                                            onChange={(e) => handleFieldChange("auctionTime", e.target.value)}
+                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-500 transition cursor-pointer"
+                                        >
+                                            {!AUCTION_TIME_SLOTS.includes(formData.auctionTime || "11:30 AM") && (
+                                                <option value={formData.auctionTime}>{formData.auctionTime}</option>
+                                            )}
+                                            {AUCTION_TIME_SLOTS.map((slot) => (
+                                                <option key={slot} value={slot}>
+                                                    {slot}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <span className="mt-1 block text-[10px] text-emerald-700 font-semibold">
+                                            Standard: 11:30 AM
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Row 2: EMD Amount, Bid Increment & Contact Phone for Site Visit */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-amber-200/60">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label htmlFor="emd-amount" className="block text-xs font-bold text-slate-700">
+                                                💰 EMD Amount (INR ₹)
+                                            </label>
+                                            {priceNumber > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleFieldChange("emdAmount", Math.round(priceNumber * 0.1))}
+                                                    className="text-[10px] font-bold text-amber-700 hover:underline cursor-pointer"
+                                                >
+                                                    Set 10%
+                                                </button>
+                                            )}
+                                        </div>
+                                        <input
+                                            id="emd-amount"
+                                            type="number"
+                                            value={formData.emdAmount}
+                                            onChange={(e) => handleFieldChange("emdAmount", e.target.value)}
+                                            placeholder={priceNumber > 0 ? `10% = ${Math.round(priceNumber * 0.1)}` : "e.g. 525000"}
+                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 transition"
+                                        />
+                                        <span className="mt-1 block text-[10px] text-emerald-700 font-semibold truncate">
+                                            {Number(formData.emdAmount) > 0
+                                                ? `= ${formatINR(Number(formData.emdAmount))}`
+                                                : priceNumber > 0
+                                                ? `Default 10%: ${formatINR(Math.round(priceNumber * 0.1))}`
+                                                : "Defaults to 10% of Reserve Price"}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="bid-increment" className="block text-xs font-bold text-slate-700 mb-1">
+                                            💰 Bid Increment (INR ₹)
+                                        </label>
+                                        <input
+                                            id="bid-increment"
+                                            type="number"
+                                            value={formData.bidIncrement}
+                                            onChange={(e) => handleFieldChange("bidIncrement", e.target.value)}
+                                            placeholder="e.g. 50000"
+                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 transition"
+                                        />
+                                        <span className="mt-1 block text-[10px] text-slate-500 font-medium">
+                                            {Number(formData.bidIncrement) > 0 ? `= ${formatINR(Number(formData.bidIncrement))}` : "e.g. ₹50,000"}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="auction-contact-phone" className="block text-xs font-bold text-slate-700 mb-1">
+                                            📞 Site Visit Contact No.
+                                        </label>
+                                        <input
+                                            id="auction-contact-phone"
+                                            type="tel"
+                                            value={formData.contactPhone}
+                                            onChange={(e) => handleFieldChange("contactPhone", e.target.value)}
+                                            placeholder="e.g. 7439409340"
+                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 transition"
+                                        />
+                                        <span className="mt-1 block text-[10px] text-slate-500 font-medium">
+                                            For More Details & Site Visit
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* SECTION 2: Manual Property Description */}
@@ -809,15 +1242,29 @@ export default function AdminPropertyForm() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                                <span className="flex items-center gap-1.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                     <FileText size={14} className="text-indigo-600" />
                                     <span>About This Property</span>
-                                </span>
-                                <span className="text-[10px] font-medium text-slate-400">Multi-paragraph supported</span>
-                            </label>
+                                </label>
+                                {!isFreshMode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const formatted = buildFormattedNoticeText(formData);
+                                            handleFieldChange("propertyDescription", formatted);
+                                            handleFieldChange("propertyTitle", formatted);
+                                            addToast("Generated formatted Bank Auction Notice from form fields!", "success");
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 text-[11px] font-bold text-indigo-700 transition cursor-pointer"
+                                    >
+                                        <Sparkles size={12} />
+                                        <span>📋 Auto-Format Notice from Fields</span>
+                                    </button>
+                                )}
+                            </div>
                             <textarea
-                                rows={5}
+                                rows={12}
                                 value={formData.propertyDescription}
                                 onChange={(e) => {
                                     handleFieldChange("propertyDescription", e.target.value);
@@ -833,38 +1280,164 @@ export default function AdminPropertyForm() {
                             />
                         </div>
 
-                        {/* Quick Insert Suggestion Chips */}
-                        <div>
-                            <span className="text-[11px] font-bold text-slate-400 block mb-1.5">
-                                Quick Insert Highlights:
-                            </span>
-                            <div className="flex flex-wrap gap-1.5">
-                                {[
-                                    "Clear Freehold Title",
-                                    "Immediate Physical Possession",
-                                    "Lift & Covered Parking",
-                                    "24/7 Gated Security",
-                                    "Wide Road Facing",
-                                    "Prime Metro Connectivity",
-                                    "Direct Bank Auction",
-                                    "High Rental Yield"
-                                ].map((chip) => (
+                        {/* Responsive Property Amenities & Facilities Selector */}
+                        <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-3.5 sm:p-4 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                                        <Sparkles size={14} className="text-emerald-600" />
+                                        <span>Property Amenities & Facilities</span>
+                                    </span>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                        Tap to select amenities included with this property ({(formData.amenities || []).length} selected)
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    {(formData.amenities || []).length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const currentDesc = (formData.propertyDescription || "").trim();
+                                                const block = `✨ Amenities:\n${(formData.amenities || []).map((a) => `- ${a}`).join("\n")}`;
+                                                const nextDesc = currentDesc ? `${currentDesc}\n\n${block}` : block;
+                                                handleFieldChange("propertyDescription", nextDesc);
+                                                handleFieldChange("propertyTitle", nextDesc);
+                                                addToast("Selected amenities inserted into description!", "success");
+                                            }}
+                                            className="rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 text-[10px] font-bold text-indigo-800 transition cursor-pointer"
+                                        >
+                                            + Insert into Description
+                                        </button>
+                                    )}
                                     <button
-                                        key={chip}
                                         type="button"
-                                        onClick={() => {
-                                            const current = formData.propertyDescription ? formData.propertyDescription.trim() : "";
-                                            const newText = current ? `${current}\n• ${chip}` : `• ${chip}`;
-                                            handleFieldChange("propertyDescription", newText);
-                                            handleFieldChange("propertyTitle", newText);
-                                        }}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-900 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition cursor-pointer active:scale-95"
+                                        onClick={() =>
+                                            handleFieldChange("amenities", [
+                                                "Community Hall",
+                                                "CCTV Surveillance",
+                                                "24/7 Security",
+                                                "Gym",
+                                                "Indoor Playroom",
+                                                "Lift / Elevator",
+                                                "Covered Car Parking",
+                                                "24/7 Power Backup"
+                                            ])
+                                        }
+                                        className="rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800 transition cursor-pointer"
                                     >
-                                        <span className="text-indigo-600 font-bold">+</span>
-                                        <span>{chip}</span>
+                                        Select Popular
                                     </button>
-                                ))}
+                                    {(formData.amenities || []).length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleFieldChange("amenities", [])}
+                                            className="rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 px-2.5 py-1 text-[10px] font-bold text-slate-600 transition cursor-pointer"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2">
+                                {PROPERTY_AMENITIES.map((item) => {
+                                    const currentList = Array.isArray(formData.amenities) ? formData.amenities : [];
+                                    const isSelected = currentList.includes(item.label);
+                                    return (
+                                        <button
+                                            key={item.label}
+                                            type="button"
+                                            onClick={() => {
+                                                const next = isSelected
+                                                    ? currentList.filter((a) => a !== item.label)
+                                                    : [...currentList, item.label];
+                                                handleFieldChange("amenities", next);
+                                            }}
+                                            className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition cursor-pointer active:scale-95 ${
+                                                isSelected
+                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500/15 shadow-2xs"
+                                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            <span className="flex items-center gap-2 min-w-0">
+                                                <span className="shrink-0 text-sm">{item.icon}</span>
+                                                <span className="leading-tight">{item.label}</span>
+                                            </span>
+                                            {isSelected && (
+                                                <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Custom Amenity Input + Extra Custom Tags */}
+                            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                                <input
+                                    type="text"
+                                    value={customAmenity}
+                                    onChange={(e) => setCustomAmenity(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            const trimmed = customAmenity.trim();
+                                            if (!trimmed) return;
+                                            const currentList = Array.isArray(formData.amenities) ? formData.amenities : [];
+                                            if (!currentList.includes(trimmed)) {
+                                                handleFieldChange("amenities", [...currentList, trimmed]);
+                                            }
+                                            setCustomAmenity("");
+                                        }
+                                    }}
+                                    placeholder="Add custom amenity (e.g. Rooftop Terrace, Visitor Parking)..."
+                                    className="flex-1 h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 transition"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const trimmed = customAmenity.trim();
+                                        if (!trimmed) return;
+                                        const currentList = Array.isArray(formData.amenities) ? formData.amenities : [];
+                                        if (!currentList.includes(trimmed)) {
+                                            handleFieldChange("amenities", [...currentList, trimmed]);
+                                        }
+                                        setCustomAmenity("");
+                                    }}
+                                    className="h-9 rounded-xl bg-slate-950 hover:bg-slate-800 px-3.5 text-xs font-bold text-amber-400 transition cursor-pointer shrink-0"
+                                >
+                                    + Add Amenity
+                                </button>
+                            </div>
+
+                            {/* Show any custom amenities not in the preset list */}
+                            {Array.isArray(formData.amenities) &&
+                                formData.amenities.filter((a) => !PROPERTY_AMENITIES.some((p) => p.label === a)).length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {formData.amenities
+                                            .filter((a) => !PROPERTY_AMENITIES.some((p) => p.label === a))
+                                            .map((custom) => (
+                                                <span
+                                                    key={custom}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-900"
+                                                >
+                                                    <span>✨ {custom}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleFieldChange(
+                                                                "amenities",
+                                                                formData.amenities.filter((x) => x !== custom)
+                                                            )
+                                                        }
+                                                        className="text-emerald-700 hover:text-rose-600 font-black cursor-pointer"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </span>
+                                            ))}
+                                    </div>
+                                )}
                         </div>
                     </div>
 
@@ -1360,10 +1933,10 @@ export default function AdminPropertyForm() {
                     </div>
 
                     {/* Bottom Save Action Button */}
-                    <div className="flex items-center justify-end gap-3 pt-2">
+                    <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2.5 sm:gap-3 pt-2">
                         <Link
                             to={isFreshMode ? "/admin/fresh-properties" : "/admin/properties"}
-                            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                            className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
                         >
                             Cancel
                         </Link>
@@ -1371,7 +1944,7 @@ export default function AdminPropertyForm() {
                         <button
                             type="submit"
                             disabled={saving || videoUploading}
-                            className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-xs font-bold text-amber-400 hover:bg-slate-900 shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-xs font-bold text-amber-400 hover:bg-slate-900 shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50"
                         >
                             <Save size={16} />
                             <span>
@@ -1496,6 +2069,53 @@ export default function AdminPropertyForm() {
                                         {formData.cityName || "Kolkata"}, {formData.stateName || "West Bengal"}
                                     </span>
                                 </div>
+
+                                {Array.isArray(formData.amenities) && formData.amenities.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 pt-0.5">
+                                        {formData.amenities.slice(0, 5).map((amenity) => {
+                                            const preset = PROPERTY_AMENITIES.find((a) => a.label === amenity);
+                                            return (
+                                                <span
+                                                    key={amenity}
+                                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800"
+                                                >
+                                                    <span>{preset ? preset.icon : "✨"}</span>
+                                                    <span>{amenity}</span>
+                                                </span>
+                                            );
+                                        })}
+                                        {formData.amenities.length > 5 && (
+                                            <span className="inline-flex items-center rounded-lg bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                                                +{formData.amenities.length - 5} more
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {!isFreshMode && (formData.emdSubmissionDate || formData.auctionDate) && (
+                                    <div className="rounded-xl bg-amber-50/70 border border-amber-200/80 p-2.5 space-y-1 text-[11px]">
+                                        {formData.emdSubmissionDate && (
+                                            <div className="font-bold text-rose-700 flex items-center justify-between gap-2">
+                                                <span>📅 EMD Submission Last Date:</span>
+                                                <span>
+                                                    {formatOrdinalDate(formData.emdSubmissionDate)} ({formData.emdSubmissionTime || "5:00 PM"})
+                                                </span>
+                                            </div>
+                                        )}
+                                        {formData.auctionDate && (
+                                            <div className="font-bold text-slate-900 flex items-center justify-between gap-2">
+                                                <span>🔨 Auction Date:</span>
+                                                <span>{formatOrdinalDate(formData.auctionDate)}</span>
+                                            </div>
+                                        )}
+                                        {formData.auctionTime && (
+                                            <div className="font-bold text-emerald-700 flex items-center justify-between gap-2">
+                                                <span>⏰ Auction Time:</span>
+                                                <span>{formData.auctionTime}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                                     <div>

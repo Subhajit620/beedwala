@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, MessageCircle, Phone, Send, X } from "lucide-react";
+import { CheckCircle2, Loader2, MessageCircle, Phone, Send, Share2, X } from "lucide-react";
 import { createInquiry } from "../services/adminService";
 import { formatINR } from "../utils/formatters";
+import { useApp } from "../context/AppContext";
 
 /**
  * "I'm interested" form for Fresh (direct-sale, no auction) properties.
- * Creates a lead in the admin Inquiries page with type "fresh_property".
- * Unlike a fake "success", failures are shown so the buyer can retry or call directly.
+ * Auto-fills visitorUser details if the buyer already signed in, and saves lead with type "fresh_property".
  */
 export default function FreshEnquiryModal({ property, onClose }) {
+    const { visitorUser, addToast } = useApp();
     const [form, setForm] = useState({
-        name: "",
-        phone: "",
-        email: "",
+        name: visitorUser?.name || "",
+        phone: visitorUser?.phone || "",
+        email: visitorUser?.email || "",
         message: `Hi, I'm interested in "${property.title}" (${formatINR(property.price)}) in ${property.city}. Please contact me with more details and a visit time.`
     });
     const [status, setStatus] = useState("idle"); // idle | sending | sent
@@ -32,7 +33,7 @@ export default function FreshEnquiryModal({ property, onClose }) {
         e.preventDefault();
         setError("");
         if (!form.name.trim()) return setError("Please enter your name.");
-        if (phoneDigits.length < 10 && !form.email.trim()) return setError("Please enter a valid phone number (or an email).");
+        if (phoneDigits.length < 10 && !form.email.trim()) return setError("Please enter a valid 10-digit mobile number.");
 
         setStatus("sending");
         try {
@@ -50,10 +51,23 @@ export default function FreshEnquiryModal({ property, onClose }) {
                 priority: "high"
             });
             setStatus("sent");
+            addToast("Enquiry registered! Our team will contact you shortly.", "success");
         } catch (err) {
             setStatus("idle");
             setError(err?.response?.data?.message || "Couldn't send your enquiry. Please check your connection and try again.");
         }
+    };
+
+    const handleShareWhatsApp = () => {
+        const shareUrl = `${window.location.origin}/fresh-properties`;
+        const text = encodeURIComponent(
+            `🏡 *Direct Sale Property on Bidwallah (No Auction)*\n\n` +
+            `*${property.title}*\n` +
+            `💰 *Fixed Price:* ${formatINR(property.price)}\n` +
+            `📍 *Location:* ${property.address ? `${property.address}, ` : ""}${property.city}, ${property.state}\n\n` +
+            `👉 View photos, videos & details on Bidwallah:\n${shareUrl}`
+        );
+        window.open(`https://wa.me/?text=${text}`, "_blank");
     };
 
     const contactDigits = (property.contactPhone || "").replace(/\D/g, "");
@@ -88,9 +102,19 @@ export default function FreshEnquiryModal({ property, onClose }) {
                             Thank you, {form.name.split(" ")[0]}. Our team has received your interest in this property and will contact you
                             {phoneDigits.length >= 10 ? ` on ${form.phone.trim()}` : ""} shortly.
                         </p>
-                        <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-bold text-amber-400 hover:bg-slate-800 cursor-pointer">
-                            Done
-                        </button>
+                        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                            <button
+                                type="button"
+                                onClick={handleShareWhatsApp}
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-xs font-black text-white cursor-pointer"
+                            >
+                                <Share2 size={14} />
+                                <span>Share on WhatsApp</span>
+                            </button>
+                            <button type="button" onClick={onClose} className="w-full sm:w-auto rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-bold text-amber-400 hover:bg-slate-800 cursor-pointer">
+                                Done
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <form onSubmit={submit} className="space-y-3.5 px-6 py-5">
@@ -100,8 +124,8 @@ export default function FreshEnquiryModal({ property, onClose }) {
                                 <input value={form.name} onChange={update("name")} autoComplete="name" maxLength={80} required className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm outline-none focus:border-amber-500 focus:bg-white" />
                             </label>
                             <label className="block text-xs font-bold text-slate-700">
-                                Phone number *
-                                <input value={form.phone} onChange={update("phone")} type="tel" inputMode="tel" autoComplete="tel" maxLength={18} placeholder="10-digit mobile" className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm outline-none focus:border-amber-500 focus:bg-white" />
+                                Mobile / WhatsApp *
+                                <input value={form.phone} onChange={update("phone")} type="tel" inputMode="tel" autoComplete="tel" required maxLength={18} placeholder="10-digit mobile" className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm outline-none focus:border-amber-500 focus:bg-white" />
                             </label>
                         </div>
                         <label className="block text-xs font-bold text-slate-700">

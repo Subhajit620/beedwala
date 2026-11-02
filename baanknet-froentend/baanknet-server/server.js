@@ -10,8 +10,8 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
 // ===============================
 // Media Uploads (property videos are stored on disk, not in MongoDB)
@@ -46,6 +46,22 @@ mongoose
     .catch((error) => {
         console.error("MongoDB connection failed:", error.message);
     });
+
+// Ensure MongoDB is connected before handling API requests
+app.use("/api", async (req, res, next) => {
+    try {
+        if (mongoose.connection.readyState === 0 && process.env.MONGODB_URI) {
+            await mongoose.connect(process.env.MONGODB_URI, {
+                serverSelectionTimeoutMS: 15000,
+                tlsAllowInvalidCertificates: true
+            });
+        }
+        next();
+    } catch (err) {
+        console.error("MongoDB auto-reconnect failed:", err.message);
+        next();
+    }
+});
 
 // ===============================
 // 1. Property Schema & Model
@@ -198,8 +214,23 @@ const propertySchema = new mongoose.Schema(
         },
 
         auctionDate: Date,
+        auctionTime: { type: String, default: "11:30 AM" },
         emdAmount: Number,
         emdSubmissionDate: Date,
+        emdSubmissionTime: { type: String, default: "5:00 PM" },
+        bidIncrement: Number,
+        flatNo: String,
+        bedrooms: Number,
+        bathrooms: Number,
+        balconies: Number,
+        kitchens: Number,
+        drawingDining: String,
+        undividedLandShare: String,
+        contactPhone: String,
+        amenities: {
+            type: [String],
+            default: []
+        },
 
         lastSeenAt: {
             type: Date,
@@ -454,6 +485,7 @@ function escapeRegex(text) {
 
 function buildFilterQuery(queryParams) {
     const query = {};
+    const andConditions = [];
 
     if (queryParams.status === "active") {
         query.isActive = true;
@@ -467,45 +499,92 @@ function buildFilterQuery(queryParams) {
     if (search) {
         const safeSearch = escapeRegex(search);
         const regex = new RegExp(safeSearch, "i");
-        query.$or = [
-            { propertyTitle: regex },
-            { propertyHeading: regex },
-            { propertyUniqueId: regex },
-            { sourcePropertyId: regex },
-            { bankName: regex },
-            { cityName: regex },
-            { districtName: regex },
-            { stateName: regex },
-            { pincode: regex },
-            { locality: regex },
-            { propertySubType: regex },
-            { borrowerName: regex }
-        ];
+        andConditions.push({
+            $or: [
+                { propertyTitle: regex },
+                { propertyHeading: regex },
+                { propertyDescription: regex },
+                { propertyUniqueId: regex },
+                { sourcePropertyId: regex },
+                { bankName: regex },
+                { cityName: regex },
+                { districtName: regex },
+                { stateName: regex },
+                { pincode: regex },
+                { locality: regex },
+                { propertyType: regex },
+                { propertySubType: regex },
+                { borrowerName: regex }
+            ]
+        });
     }
 
-    if (queryParams.state) {
-        query.stateName = new RegExp(`^${escapeRegex(queryParams.state.trim())}$`, "i");
+    if (queryParams.state && queryParams.state.trim()) {
+        query.stateName = new RegExp(escapeRegex(queryParams.state.trim()), "i");
     }
-    if (queryParams.city) {
-        query.cityName = new RegExp(`^${escapeRegex(queryParams.city.trim())}$`, "i");
+    if (queryParams.city && queryParams.city.trim()) {
+        const cityRegex = new RegExp(escapeRegex(queryParams.city.trim()), "i");
+        andConditions.push({
+            $or: [
+                { cityName: cityRegex },
+                { districtName: cityRegex },
+                { locality: cityRegex }
+            ]
+        });
     }
-    if (queryParams.locality) {
+    if (queryParams.locality && queryParams.locality.trim()) {
         query.locality = new RegExp(escapeRegex(queryParams.locality.trim()), "i");
     }
-    if (queryParams.bank) {
-        query.bankName = new RegExp(`^${escapeRegex(queryParams.bank.trim())}$`, "i");
+    if (queryParams.bank && queryParams.bank.trim()) {
+        const rawBank = queryParams.bank.trim();
+        const bankAliases = {
+            sbi: "State Bank of India",
+            pnb: "Punjab National Bank",
+            bob: "Bank of Baroda",
+            boi: "Bank of India",
+            ubi: "Union Bank of India",
+            iob: "Indian Overseas Bank",
+            cbi: "Central Bank of India"
+        };
+        const resolvedBank = bankAliases[rawBank.toLowerCase()] || rawBank;
+        query.bankName = new RegExp(escapeRegex(resolvedBank), "i");
     }
     if (queryParams.type || queryParams.propertyType) {
         const t = (queryParams.type || queryParams.propertyType).trim();
-        query.propertyType = new RegExp(`^${escapeRegex(t)}$`, "i");
+        if (t && t.toLowerCase() !== "all") {
+            const lowerT = t.toLowerCase();
+            if (lowerT === "land" || lowerT === "plot" || lowerT === "land & plots") {
+                const landRegex = new RegExp("plot|land", "i");
+                andConditions.push({
+                    $or: [
+                        { propertyType: landRegex },
+                        { propertySubType: landRegex },
+                        { propertyTitle: landRegex },
+                        { propertyHeading: landRegex }
+                    ]
+                });
+            } else {
+                const typeRegex = new RegExp(escapeRegex(t), "i");
+                andConditions.push({
+                    $or: [
+                        { propertyType: typeRegex },
+                        { propertySubType: typeRegex }
+                    ]
+                });
+            }
+        }
     }
     if (queryParams.subType || queryParams.propertySubType) {
         const st = (queryParams.subType || queryParams.propertySubType).trim();
-        query.propertySubType = new RegExp(`^${escapeRegex(st)}$`, "i");
+        if (st && st.toLowerCase() !== "all") {
+            query.propertySubType = new RegExp(escapeRegex(st), "i");
+        }
     }
     if (queryParams.possessionType || queryParams.possession) {
         const pt = (queryParams.possessionType || queryParams.possession).trim();
-        query.propertyPossessionType = new RegExp(escapeRegex(pt), "i");
+        if (pt && pt.toLowerCase() !== "all") {
+            query.propertyPossessionType = new RegExp(escapeRegex(pt), "i");
+        }
     }
 
     const minPrice = parseFloat(queryParams.minPrice);
@@ -522,6 +601,12 @@ function buildFilterQuery(queryParams) {
         query.area = {};
         if (!isNaN(minArea)) query.area.$gte = minArea;
         if (!isNaN(maxArea)) query.area.$lte = maxArea;
+    }
+
+    if (andConditions.length === 1 && !query.$or) {
+        Object.assign(query, andConditions[0]);
+    } else if (andConditions.length > 0) {
+        query.$and = andConditions;
     }
 
     return query;
@@ -1044,9 +1129,16 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
             newInquiries,
             priceAgg,
             typesAgg,
+            subTypesAgg,
             banksAgg,
+            localitiesAgg,
             possessionAgg,
             statesAgg,
+            priceBracketsAgg,
+            monthlyTrendAgg,
+            inquiryStatusAgg,
+            inquiryStageAgg,
+            inquiryTypeAgg,
             recentProperties,
             recentInquiries,
             lastSync,
@@ -1081,10 +1173,10 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
                 { $sort: { count: -1 } }
             ]),
             Property.aggregate([
-                { $match: { bankName: { $ne: null, $ne: "" } } },
+                { $match: { propertySubType: { $ne: null, $ne: "" } } },
                 {
                     $group: {
-                        _id: "$bankName",
+                        _id: "$propertySubType",
                         count: { $sum: 1 },
                         totalValuation: { $sum: "$propertyPrice" }
                     }
@@ -1093,11 +1185,36 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
                 { $limit: 12 }
             ]),
             Property.aggregate([
+                { $match: { bankName: { $ne: null, $ne: "" } } },
+                {
+                    $group: {
+                        _id: "$bankName",
+                        count: { $sum: 1 },
+                        activeCount: { $sum: { $cond: [{ $eq: ["$isActive", true] }, 1, 0] } },
+                        totalValuation: { $sum: "$propertyPrice" }
+                    }
+                },
+                { $sort: { count: -1 } }
+            ]),
+            Property.aggregate([
+                { $match: { locality: { $ne: null, $ne: "" } } },
+                {
+                    $group: {
+                        _id: "$locality",
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
+                    }
+                },
+                { $sort: { count: -1 } },
+                { $limit: 10 }
+            ]),
+            Property.aggregate([
                 { $match: { propertyPossessionType: { $ne: null, $ne: "" } } },
                 {
                     $group: {
                         _id: "$propertyPossessionType",
-                        count: { $sum: 1 }
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
                     }
                 },
                 { $sort: { count: -1 } }
@@ -1107,10 +1224,71 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
                 {
                     $group: {
                         _id: "$stateName",
-                        count: { $sum: 1 }
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
                     }
                 },
                 { $sort: { count: -1 } }
+            ]),
+            Property.aggregate([
+                { $match: { propertyPrice: { $gt: 0 } } },
+                {
+                    $group: {
+                        _id: {
+                            $switch: {
+                                branches: [
+                                    { case: { $lt: ["$propertyPrice", 2500000] }, then: "under_25l" },
+                                    { case: { $lt: ["$propertyPrice", 5000000] }, then: "25l_50l" },
+                                    { case: { $lt: ["$propertyPrice", 10000000] }, then: "50l_1cr" },
+                                    { case: { $lt: ["$propertyPrice", 50000000] }, then: "1cr_5cr" }
+                                ],
+                                default: "above_5cr"
+                            }
+                        },
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
+                    }
+                }
+            ]),
+            Property.aggregate([
+                {
+                    $addFields: {
+                        effectiveDate: { $ifNull: ["$createdOn", "$createdAt"] }
+                    }
+                },
+                { $match: { effectiveDate: { $ne: null } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m", date: "$effectiveDate" } },
+                        listings: { $sum: 1 },
+                        valuation: { $sum: { $ifNull: ["$propertyPrice", 0] } }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            Inquiry.aggregate([
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 }
+                    }
+                }
+            ]),
+            Inquiry.aggregate([
+                {
+                    $group: {
+                        _id: "$stage",
+                        count: { $sum: 1 }
+                    }
+                }
+            ]),
+            Inquiry.aggregate([
+                {
+                    $group: {
+                        _id: "$type",
+                        count: { $sum: 1 }
+                    }
+                }
             ]),
             Property.find().sort({ createdAt: -1 }).limit(6).lean(),
             Inquiry.find().sort({ createdAt: -1 }).limit(6).lean(),
@@ -1120,6 +1298,73 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
 
         const distinctBanks = await Property.distinct("bankName", { bankName: { $ne: null, $ne: "" } });
         const distinctCities = await Property.distinct("cityName", { cityName: { $ne: null, $ne: "" } });
+
+        // Format Price Brackets with real counts & percentages
+        const bracketMap = {};
+        priceBracketsAgg.forEach((b) => {
+            if (b._id) bracketMap[b._id] = b;
+        });
+        const bracketDefs = [
+            { key: "under_25l", label: "< ₹25L", minPrice: 0, maxPrice: 2500000 },
+            { key: "25l_50l", label: "₹25L–50L", minPrice: 2500000, maxPrice: 5000000 },
+            { key: "50l_1cr", label: "₹50L–1Cr", minPrice: 5000000, maxPrice: 10000000 },
+            { key: "1cr_5cr", label: "₹1Cr–5Cr", minPrice: 10000000, maxPrice: 50000000 },
+            { key: "above_5cr", label: "> ₹5 Cr", minPrice: 50000000, maxPrice: null }
+        ];
+        const totalPriced = bracketDefs.reduce((acc, def) => acc + (bracketMap[def.key]?.count || 0), 0);
+        const priceBrackets = bracketDefs.map((def) => {
+            const count = bracketMap[def.key]?.count || 0;
+            const totalValuation = bracketMap[def.key]?.totalValuation || 0;
+            const percent = totalPriced > 0 ? Number(((count / totalPriced) * 100).toFixed(1)) : 0;
+            return {
+                key: def.key,
+                label: def.label,
+                minPrice: def.minPrice,
+                maxPrice: def.maxPrice,
+                count,
+                totalValuation,
+                percent
+            };
+        });
+
+        // Format Monthly Trend with cumulative and monthly values
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        let runningListings = 0;
+        let runningValuation = 0;
+        const monthlyTrend = monthlyTrendAgg.map((m) => {
+            runningListings += m.listings || 0;
+            runningValuation += m.valuation || 0;
+            const [yr, mo] = String(m._id || "").split("-");
+            const monthIdx = parseInt(mo, 10) - 1;
+            const shortYear = yr ? "'" + yr.slice(-2) : "";
+            const label = monthNames[monthIdx] ? (monthNames[monthIdx] + " " + shortYear).trim() : m._id;
+            return {
+                monthKey: m._id,
+                month: label,
+                monthlyListings: m.listings || 0,
+                monthlyValuationCr: Number(((m.valuation || 0) / 10000000).toFixed(2)),
+                listings: runningListings,
+                valuationCr: Number((runningValuation / 10000000).toFixed(2))
+            };
+        });
+
+        // Format Real Inquiry / Lead Breakdown
+        const statusCounts = { new: 0, contacted: 0, in_progress: 0, converted: 0, closed: 0, spam: 0 };
+        inquiryStatusAgg.forEach((item) => {
+            if (item._id && statusCounts[item._id] !== undefined) {
+                statusCounts[item._id] = item.count;
+            }
+        });
+        const stageCounts = {};
+        inquiryStageAgg.forEach((item) => {
+            if (item._id) stageCounts[item._id] = item.count;
+        });
+        const typeCounts = { visitor_login: 0, property_inquiry: 0, fresh_property: 0, contact_message: 0 };
+        inquiryTypeAgg.forEach((item) => {
+            if (item._id) {
+                typeCounts[item._id] = (typeCounts[item._id] || 0) + item.count;
+            }
+        });
 
         res.json({
             success: true,
@@ -1134,9 +1379,19 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
                 newInquiries,
                 valuation: priceAgg[0] || { totalValuation: 0, avgPrice: 0, minPrice: 0, maxPrice: 0 },
                 typesBreakdown: typesAgg,
+                subTypesBreakdown: subTypesAgg,
                 banksBreakdown: banksAgg,
+                localitiesBreakdown: localitiesAgg,
                 possessionBreakdown: possessionAgg,
                 statesBreakdown: statesAgg,
+                priceBrackets,
+                monthlyTrend,
+                inquiriesBreakdown: {
+                    total: totalInquiries,
+                    byStatus: statusCounts,
+                    byStage: stageCounts,
+                    byType: typeCounts
+                },
                 recentProperties,
                 recentInquiries,
                 recentAuditLogs,
@@ -1239,6 +1494,7 @@ app.post("/api/properties", async (req, res) => {
             photos: photosList,
             displayImage: coverImage,
             videos: sanitizeVideos(data.videos),
+            amenities: Array.isArray(data.amenities) ? data.amenities.map((a) => String(a || "").trim()).filter(Boolean) : [],
             propertyDescription: data.propertyDescription || data.propertyTitle || "",
             propertyTitle: data.propertyTitle || data.propertyDescription || data.propertyHeading || "",
             propertyPrice: Number(data.propertyPrice) || 0,
@@ -1246,6 +1502,16 @@ app.post("/api/properties", async (req, res) => {
             area: Number(data.area) || undefined,
             latitude: data.latitude !== undefined && data.latitude !== "" && !isNaN(Number(data.latitude)) ? Number(data.latitude) : undefined,
             longitude: data.longitude !== undefined && data.longitude !== "" && !isNaN(Number(data.longitude)) ? Number(data.longitude) : undefined,
+            emdSubmissionDate: data.emdSubmissionDate && !isNaN(new Date(data.emdSubmissionDate).getTime()) ? new Date(data.emdSubmissionDate) : undefined,
+            emdSubmissionTime: data.emdSubmissionTime ? String(data.emdSubmissionTime).trim() : "5:00 PM",
+            auctionDate: data.auctionDate && !isNaN(new Date(data.auctionDate).getTime()) ? new Date(data.auctionDate) : undefined,
+            auctionTime: data.auctionTime ? String(data.auctionTime).trim() : "11:30 AM",
+            emdAmount: data.emdAmount !== undefined && data.emdAmount !== "" && !isNaN(Number(data.emdAmount)) ? Number(data.emdAmount) : undefined,
+            bidIncrement: data.bidIncrement !== undefined && data.bidIncrement !== "" && !isNaN(Number(data.bidIncrement)) ? Number(data.bidIncrement) : undefined,
+             bedrooms: data.bedrooms !== undefined && data.bedrooms !== "" && !isNaN(Number(data.bedrooms)) ? Number(data.bedrooms) : undefined,
+            bathrooms: data.bathrooms !== undefined && data.bathrooms !== "" && !isNaN(Number(data.bathrooms)) ? Number(data.bathrooms) : undefined,
+            balconies: data.balconies !== undefined && data.balconies !== "" && !isNaN(Number(data.balconies)) ? Number(data.balconies) : undefined,
+            kitchens: data.kitchens !== undefined && data.kitchens !== "" && !isNaN(Number(data.kitchens)) ? Number(data.kitchens) : undefined,
             isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
             createdOn: data.createdOn ? new Date(data.createdOn) : new Date(),
             lastSeenAt: new Date(),
@@ -1279,6 +1545,42 @@ app.put("/api/properties/:id", async (req, res) => {
     try {
         const id = req.params.id;
         const updateData = { ...req.body };
+        const appendPhotos = Array.isArray(updateData.appendPhotos)
+            ? updateData.appendPhotos.filter(Boolean)
+            : null;
+        delete updateData.appendPhotos;
+
+        const conditions = [
+            { sourcePropertyId: id },
+            { propertyUniqueId: id }
+        ];
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            conditions.push({ _id: id });
+        }
+
+        // Fast path: chunked photo append (keeps individual requests well under 1 MB proxy limits)
+        if (appendPhotos && appendPhotos.length > 0 && Object.keys(updateData).length === 0) {
+            const updated = await Property.findOneAndUpdate(
+                { $or: conditions },
+                {
+                    $push: { photos: { $each: appendPhotos } },
+                    $set: { lastSeenAt: new Date() }
+                },
+                { new: true, runValidators: true }
+            );
+            if (!updated) {
+                return res.status(404).json({ success: false, message: `Property '${id}' not found` });
+            }
+            if (!updated.displayImage && Array.isArray(updated.photos) && updated.photos.length > 0) {
+                updated.displayImage = updated.photos[0];
+                await updated.save();
+            }
+            return res.json({
+                success: true,
+                message: "Property photos appended successfully",
+                data: updated
+            });
+        }
 
         if (updateData.propertyPrice !== undefined) {
             updateData.propertyPrice = Number(updateData.propertyPrice) || 0;
@@ -1293,6 +1595,28 @@ app.put("/api/properties/:id", async (req, res) => {
         if (updateData.longitude !== undefined) {
             updateData.longitude = updateData.longitude !== "" && !isNaN(Number(updateData.longitude)) ? Number(updateData.longitude) : null;
         }
+        if (updateData.emdSubmissionDate !== undefined) {
+            updateData.emdSubmissionDate = updateData.emdSubmissionDate && !isNaN(new Date(updateData.emdSubmissionDate).getTime())
+                ? new Date(updateData.emdSubmissionDate)
+                : null;
+        }
+        if (updateData.auctionDate !== undefined) {
+            updateData.auctionDate = updateData.auctionDate && !isNaN(new Date(updateData.auctionDate).getTime())
+                ? new Date(updateData.auctionDate)
+                : null;
+        }
+        if (updateData.emdAmount !== undefined) {
+            updateData.emdAmount = updateData.emdAmount !== "" && !isNaN(Number(updateData.emdAmount))
+                ? Number(updateData.emdAmount)
+                : null;
+        }
+        for (const numField of ["bidIncrement", "bedrooms", "bathrooms", "balconies", "kitchens"]) {
+            if (updateData[numField] !== undefined) {
+                updateData[numField] = updateData[numField] !== "" && !isNaN(Number(updateData[numField]))
+                    ? Number(updateData[numField])
+                    : null;
+            }
+        }
         if (updateData.photos !== undefined) {
             updateData.photos = Array.isArray(updateData.photos) ? updateData.photos.filter(Boolean) : (updateData.displayImage ? [updateData.displayImage] : []);
             if (!updateData.displayImage && updateData.photos.length > 0) {
@@ -1302,15 +1626,12 @@ app.put("/api/properties/:id", async (req, res) => {
         if (updateData.videos !== undefined) {
             updateData.videos = sanitizeVideos(updateData.videos);
         }
-        updateData.lastSeenAt = new Date();
-
-        const conditions = [
-            { sourcePropertyId: id },
-            { propertyUniqueId: id }
-        ];
-        if (mongoose.Types.ObjectId.isValid(id)) {
-            conditions.push({ _id: id });
+        if (updateData.amenities !== undefined) {
+            updateData.amenities = Array.isArray(updateData.amenities)
+                ? updateData.amenities.map((a) => String(a || "").trim()).filter(Boolean)
+                : [];
         }
+        updateData.lastSeenAt = new Date();
 
         const updated = await Property.findOneAndUpdate(
             { $or: conditions },
@@ -1984,6 +2305,116 @@ app.get("/api/admin/export", async (req, res) => {
 // ===============================
 // AI Assistant (POST /api/chat) — see chat.js
 // ===============================
+
+// Visitor Sign-In & Lead Capture Endpoint (unlocks property browsing & saves buyer info to Leads CRM)
+app.post("/api/auth/visitor-login", async (req, res) => {
+    try {
+        const { name, phone, email, city, preference, budget, mode } = req.body || {};
+        const cleanPhone = String(phone || "").trim();
+        const cleanEmail = String(email || "").trim();
+        const cleanName = String(name || "").trim();
+        const cleanCity = String(city || "").trim();
+        const cleanPreference = String(preference || "Both Fresh & Auction Properties").trim();
+        const cleanBudget = String(budget || "").trim();
+
+        if (!cleanPhone && !cleanEmail) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter your mobile number or email address to sign in."
+            });
+        }
+
+        if (mode !== "returning" && !cleanName) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter your full name and mobile number to sign in."
+            });
+        }
+
+        const matchConditions = [];
+        if (cleanPhone) matchConditions.push({ phone: cleanPhone });
+        if (cleanEmail) matchConditions.push({ email: new RegExp(`^${escapeRegex(cleanEmail)}$`, "i") });
+
+        let existingLead = matchConditions.length > 0
+            ? await Inquiry.findOne({ $or: matchConditions }).sort({ createdAt: -1 })
+            : null;
+
+        const resolvedName = cleanName || existingLead?.name || (cleanEmail ? cleanEmail.split("@")[0] : `Visitor (${cleanPhone.slice(-4)})`);
+        const summaryParts = [
+            `Visitor signed in to unlock property listings.`,
+            cleanPreference ? `Interested In: ${cleanPreference}` : "",
+            cleanBudget ? `Budget: ${cleanBudget}` : "",
+            cleanCity ? `Preferred City: ${cleanCity}` : ""
+        ].filter(Boolean);
+
+        let savedLead;
+        if (existingLead) {
+            if (cleanName) existingLead.name = cleanName;
+            if (cleanPhone) existingLead.phone = cleanPhone;
+            if (cleanEmail) existingLead.email = cleanEmail;
+            if (cleanCity) existingLead.cityName = cleanCity;
+            existingLead.notes.push({
+                text: `Visitor signed in on website.${cleanPreference ? ` Preference: ${cleanPreference}.` : ""}${cleanBudget ? ` Budget: ${cleanBudget}.` : ""}`,
+                author: "Website Login Gate",
+                createdAt: new Date()
+            });
+            savedLead = await existingLead.save();
+        } else {
+            const newLead = new Inquiry({
+                name: resolvedName,
+                phone: cleanPhone,
+                email: cleanEmail,
+                cityName: cleanCity,
+                type: "visitor_login",
+                subject: "Website Visitor Sign-In Lead",
+                propertyTitle: `Visitor Sign-In • ${cleanPreference}${cleanCity ? ` (${cleanCity})` : ""}`,
+                message: summaryParts.join(" | "),
+                priority: "high",
+                status: "new",
+                stage: "new",
+                leadScore: 85
+            });
+            savedLead = await newLead.save();
+        }
+
+        await recordAudit(
+            "Visitor Signed In (Lead Captured)",
+            "lead",
+            savedLead._id.toString(),
+            resolvedName,
+            {
+                phone: cleanPhone,
+                email: cleanEmail,
+                city: cleanCity,
+                preference: cleanPreference,
+                budget: cleanBudget
+            },
+            resolvedName
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Signed in! All properties are now unlocked.",
+            data: {
+                id: savedLead._id.toString(),
+                name: savedLead.name,
+                phone: savedLead.phone || cleanPhone,
+                email: savedLead.email || cleanEmail,
+                city: savedLead.cityName || cleanCity,
+                preference: cleanPreference,
+                budget: cleanBudget,
+                signedInAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("POST /api/auth/visitor-login error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to sign in right now. Please try again.",
+            error: error.message
+        });
+    }
+});
 
 require("./chat")(app, { Property, mongoose });
 

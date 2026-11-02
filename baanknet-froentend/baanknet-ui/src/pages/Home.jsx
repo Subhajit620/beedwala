@@ -22,6 +22,8 @@ import {
 
 import { fetchProperties, fetchPropertyStats } from "../services/propertyService";
 import { fetchFreshProperties } from "../services/freshPropertyService";
+import { createInquiry } from "../services/adminService";
+import { formatINR } from "../utils/formatters";
 import Hero from "../components/Hero";
 import PropertyGrid from "../components/PropertyGrid";
 import BankPartnersMarquee from "../components/BankPartnersMarquee";
@@ -29,6 +31,7 @@ import AuctionRoadmap from "../components/AuctionRoadmap";
 import FaqSection from "../components/FaqSection";
 import EmiCalculator from "../components/EmiCalculator";
 import UserWelcomeModal from "../components/UserWelcomeModal";
+import { PropertyLockWall } from "../components/VisitorLoginModal";
 import { PropertyGridSkeleton } from "../components/Loading";
 import { useApp } from "../context/AppContext";
 
@@ -39,10 +42,12 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [featuredTab, setFeaturedTab] = useState("all");
-    const [vipEmail, setVipEmail] = useState("");
+    const [vipName, setVipName] = useState("");
+    const [vipPhone, setVipPhone] = useState("");
     const [vipSubscribed, setVipSubscribed] = useState(false);
+    const [vipSubmitting, setVipSubmitting] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-    const { addToast } = useApp();
+    const { addToast, visitorUser } = useApp();
 
     // Dynamic stats from server stats endpoint
     const [stats, setStats] = useState({
@@ -63,7 +68,7 @@ export default function Home() {
                     console.warn("Failed to fetch stats:", e);
                     return null;
                 }),
-                fetchProperties({ limit: 12, sort: "newest" }),
+                fetchProperties({ limit: 48, sort: "newest" }),
                 fetchFreshProperties(false).catch(() => null)
             ]);
 
@@ -110,7 +115,7 @@ export default function Home() {
             return () => window.removeEventListener("bw:open-welcome-modal", handleCustomOpen);
         }
 
-        const alreadyShown = sessionStorage.getItem("bw_user_welcome_shown");
+        const alreadyShown = true;
         const isAutomatedBrowser = typeof navigator !== "undefined" && navigator.webdriver === true;
         if (!alreadyShown && !isAutomatedBrowser) {
             const timer = setTimeout(() => {
@@ -139,11 +144,33 @@ export default function Home() {
         return list.slice(0, 6);
     }, [properties, featuredTab]);
 
-    const handleVipSubmit = (e) => {
+    const handleVipSubmit = async (e) => {
         e.preventDefault();
-        if (!vipEmail) return;
-        setVipSubscribed(true);
-        addToast("Subscribed to daily SARFAESI bank auction alerts!", "success");
+        const resolvedName = (vipName || visitorUser?.name || "WhatsApp Alert Subscriber").trim();
+        const resolvedPhone = (vipPhone || visitorUser?.phone || "").trim();
+        if (resolvedPhone.replace(/\D/g, "").length < 10) {
+            addToast("Please enter a valid 10-digit WhatsApp / mobile number.", "warning");
+            return;
+        }
+        try {
+            setVipSubmitting(true);
+            await createInquiry({
+                name: resolvedName,
+                phone: resolvedPhone,
+                email: visitorUser?.email || "",
+                type: "whatsapp_alert",
+                priority: "high",
+                subject: "WhatsApp Daily Property & Auction Alert Subscription",
+                propertyTitle: "VIP Daily WhatsApp Property Alerts",
+                message: `Buyer subscribed to daily WhatsApp & SMS property alerts (${resolvedName} • ${resolvedPhone})`
+            });
+            setVipSubscribed(true);
+            addToast("Subscribed! You will receive new property alerts on WhatsApp.", "success");
+        } catch {
+            addToast("Unable to subscribe right now. Please try again.", "error");
+        } finally {
+            setVipSubmitting(false);
+        }
     };
 
     return (
@@ -282,6 +309,99 @@ export default function Home() {
                 </div>
             </section>
 
+            {/* 2.8 Fresh Direct Properties Showcase (Admin Uploaded · No Auction) */}
+            {visitorUser && freshProperties.length > 0 && (
+                <section className="py-12 sm:py-16 bg-white border-b border-slate-200/80">
+                    <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 sm:mb-8">
+                            <div>
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3.5 py-1 text-xs font-bold text-emerald-800 mb-2 shadow-xs">
+                                    <Sparkles size={13} className="text-emerald-600" />
+                                    <span>Direct from Bidwallah Admin • No Auction</span>
+                                </div>
+                                <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
+                                    Fresh Properties (Fixed Price · No Bidding)
+                                </h2>
+                                <p className="mt-1 text-xs sm:text-sm text-slate-500 font-normal">
+                                    Handpicked properties uploaded directly by Admin — no auction, no EMD deposit. Click to view photos, walkthrough videos &amp; exact GPS pin.
+                                </p>
+                            </div>
+
+                            <Link
+                                to="/fresh-properties"
+                                className="inline-flex items-center gap-1.5 self-start md:self-auto rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 text-xs font-black text-white shadow-md transition"
+                            >
+                                <span>View All {freshProperties.length} Fresh Properties</span>
+                                <ArrowRight size={14} />
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {freshProperties.slice(0, 3).map((fp) => {
+                                const photos = Array.isArray(fp.photos) ? fp.photos.filter(Boolean) : [];
+                                const videoCount = Array.isArray(fp.videos) ? fp.videos.filter((v) => v && v.url).length : 0;
+                                return (
+                                    <Link
+                                        key={fp._id}
+                                        to="/fresh-properties"
+                                        className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs hover:shadow-xl hover:border-emerald-400 transition-all duration-300 hover:-translate-y-1"
+                                    >
+                                        <div className="relative h-52 w-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                                            {photos.length > 0 ? (
+                                                <img
+                                                    src={photos[0]}
+                                                    alt={fp.title}
+                                                    loading="lazy"
+                                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <Building2 size={44} className="text-slate-400" />
+                                            )}
+                                            <span className="absolute top-3 left-3 rounded-xl bg-emerald-600/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
+                                                Direct Sale • No Auction
+                                            </span>
+                                            {videoCount > 0 && (
+                                                <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-slate-950/85 px-2.5 py-1 text-[11px] font-bold text-amber-400">
+                                                    <Film size={12} /> {videoCount} {videoCount === 1 ? "Video" : "Videos"}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-1 flex-col justify-between p-5 space-y-3">
+                                            <div>
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                                                    {fp.propertyType}
+                                                </span>
+                                                <h3 className="mt-1 text-lg font-black text-slate-950 group-hover:text-emerald-700 transition line-clamp-1">
+                                                    {fp.title}
+                                                </h3>
+                                                <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-slate-600">
+                                                    <MapPin size={13} className="text-emerald-600 shrink-0" />
+                                                    <span className="truncate">{fp.city}, {fp.state}</span>
+                                                </p>
+                                            </div>
+                                            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                                                        Fixed Price
+                                                    </span>
+                                                    <span className="text-xl font-black text-slate-950">
+                                                        {formatINR(fp.price)}
+                                                    </span>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-bold text-amber-400 group-hover:bg-emerald-600 group-hover:text-white transition">
+                                                    <span>View Details</span>
+                                                    <ArrowRight size={13} />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* 3. Featured Bank Auction Properties Section */}
             <section className="py-12 sm:py-20 bg-slate-50 relative">
                 <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
@@ -343,7 +463,14 @@ export default function Home() {
 
                     {/* Property Grid */}
                     {!loading && !error && featuredProperties.length > 0 && (
-                        <PropertyGrid properties={featuredProperties} columns={3} />
+                        visitorUser ? (
+                            <PropertyGrid properties={featuredProperties} columns={3} />
+                        ) : (
+                            <PropertyLockWall
+                                title="Sign In to View Featured Properties"
+                                subtitle="Property listings are exclusive to registered buyers. Sign in with your Name & Mobile Number to view all Fresh Properties and Bank Auction Notices."
+                            />
+                        )
                     )}
 
                     {/* Empty Filter State */}
@@ -568,20 +695,31 @@ export default function Home() {
                                         <span>You are subscribed! Daily notices will be delivered to your inbox.</span>
                                     </div>
                                 ) : (
-                                    <form onSubmit={handleVipSubmit} className="flex flex-col sm:flex-row gap-2">
-                                        <input
-                                            type="email"
-                                            required
-                                            value={vipEmail}
-                                            onChange={(e) => setVipEmail(e.target.value)}
-                                            placeholder="Enter your email..."
-                                            className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-4 py-3 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                                        />
+                                    <form onSubmit={handleVipSubmit} className="space-y-2.5">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <input
+                                                type="text"
+                                                required
+                                                value={vipName || visitorUser?.name || ""}
+                                                onChange={(e) => setVipName(e.target.value)}
+                                                placeholder="Your Name *"
+                                                className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3.5 py-3 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                            />
+                                            <input
+                                                type="tel"
+                                                required
+                                                value={vipPhone || visitorUser?.phone || ""}
+                                                onChange={(e) => setVipPhone(e.target.value)}
+                                                placeholder="WhatsApp / Mobile No. *"
+                                                className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3.5 py-3 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                            />
+                                        </div>
                                         <button
                                             type="submit"
-                                            className="shrink-0 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-5 py-3 text-xs font-black text-slate-950 shadow-md shadow-amber-500/20 transition cursor-pointer"
+                                            disabled={vipSubmitting}
+                                            className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-5 py-3 text-xs font-black text-slate-950 shadow-md shadow-amber-500/20 transition cursor-pointer disabled:opacity-50"
                                         >
-                                            Subscribe
+                                            {vipSubmitting ? "Activating Alerts..." : "Get Alerts on WhatsApp"}
                                         </button>
                                     </form>
                                 )}

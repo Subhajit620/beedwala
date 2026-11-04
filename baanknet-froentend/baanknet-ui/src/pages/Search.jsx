@@ -14,7 +14,6 @@ import {
 
 import {
     fetchProperties,
-    fetchPropertyStats,
     fetchPropertyFacets
 } from "../services/propertyService";
 import PropertyFilters from "../components/PropertyFilters";
@@ -42,8 +41,6 @@ export default function Search() {
 
     // Dynamic facets and stats
     const [facets, setFacets] = useState(null);
-    const [availableStates, setAvailableStates] = useState(["West Bengal"]);
-    const [availableCities, setAvailableCities] = useState(["Kolkata"]);
     const [availableBanks, setAvailableBanks] = useState([]);
 
     const queryParam = searchParams.get("q") || searchParams.get("search") || "";
@@ -82,26 +79,17 @@ export default function Search() {
             })
             .catch(() => {});
 
-        fetchPropertyStats()
-            .then((res) => {
-                if (isMounted && res?.success && res?.data) {
-                    if (res.data.states && res.data.states.length > 0) {
-                        setAvailableStates(res.data.states);
-                    }
-                }
-            })
-            .catch(() => {});
-
         return () => {
             isMounted = false;
         };
     }, []);
 
-    // Sync queryParam if URL changes from outside
-    useEffect(() => {
-        const q = searchParams.get("q") || searchParams.get("search") || "";
-        setFilters((prev) => ({ ...prev, search: q }));
-    }, [searchParams]);
+    // Sync queryParam if URL changes from outside (adjusting state during render instead of in an effect)
+    const [prevQueryParam, setPrevQueryParam] = useState(queryParam);
+    if (queryParam !== prevQueryParam) {
+        setPrevQueryParam(queryParam);
+        setFilters((prev) => ({ ...prev, search: queryParam }));
+    }
 
     // Load paginated properties from backend
     const loadProperties = useCallback(async () => {
@@ -148,6 +136,7 @@ export default function Search() {
     }, [page, limit, filters]);
 
     useEffect(() => {
+        // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
         loadProperties();
     }, [loadProperties]);
 
@@ -271,8 +260,6 @@ export default function Search() {
                     onChange={handleFilterChange}
                     onReset={handleResetFilters}
                     facets={facets}
-                    states={availableStates}
-                    cities={availableCities}
                     types={types}
                     subTypes={subTypes}
                     banks={availableBanks}

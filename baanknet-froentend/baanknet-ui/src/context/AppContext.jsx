@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 
 const AppContext = createContext();
 
@@ -24,6 +24,87 @@ export function AppProvider({ children }) {
         }
     }, [savedProperties]);
 
+    // 2. Visitor Lead Sign-In State (persisted in localStorage)
+    const [visitorUser, setVisitorUser] = useState(() => {
+        try {
+            const raw = localStorage.getItem("bidwallah_visitor_user");
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    const [isVisitorLoginOpen, setIsVisitorLoginOpen] = useState(false);
+    const [visitorLoginMandatory, setVisitorLoginMandatory] = useState(false);
+    const [visitorCountdown, setVisitorCountdown] = useState(15);
+
+    // 15-second website timer: when visitor is not signed in, count down 15s and then pop up the mandatory login gate
+    useEffect(() => {
+        if (visitorUser) return;
+
+        const interval = setInterval(() => {
+            setVisitorCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setIsVisitorLoginOpen(true);
+                    setVisitorLoginMandatory(true);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [visitorUser]);
+
+    // 3. Global Toast Notifications
+    const [toasts, setToasts] = useState([]);
+    const toastSeqRef = useRef(0);
+
+    const removeToast = useCallback((id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, []);
+
+    const addToast = useCallback((message, type = "info") => {
+        toastSeqRef.current += 1;
+        const id = `toast_${toastSeqRef.current}`;
+        setToasts((prev) => [...prev, { id, message, type }]);
+
+        setTimeout(() => {
+            removeToast(id);
+        }, 4000);
+    }, [removeToast]);
+
+    const loginVisitor = useCallback((userData) => {
+        try {
+            localStorage.setItem("bidwallah_visitor_user", JSON.stringify(userData));
+        } catch (e) {
+            console.error("Error saving visitor user:", e);
+        }
+        setVisitorUser(userData);
+        setIsVisitorLoginOpen(false);
+        setVisitorLoginMandatory(false);
+        addToast(`Welcome, ${userData.name}! All properties are now unlocked.`, "success");
+    }, [addToast]);
+
+    const logoutVisitor = useCallback(() => {
+        try {
+            localStorage.removeItem("bidwallah_visitor_user");
+        } catch (e) {
+            console.error("Error removing visitor user:", e);
+        }
+        setVisitorUser(null);
+        setVisitorCountdown(15);
+        setIsVisitorLoginOpen(false);
+        setVisitorLoginMandatory(false);
+        addToast("Signed out. Sign in again to view properties.", "info");
+    }, [addToast]);
+
+    const openVisitorLogin = useCallback((mandatory = false) => {
+        if (mandatory) setVisitorLoginMandatory(true);
+        setIsVisitorLoginOpen(true);
+    }, []);
+
     const isSaved = (propertyId) => {
         return savedProperties.some((p) => (p.sourcePropertyId || p._id) === propertyId);
     };
@@ -44,7 +125,7 @@ export function AppProvider({ children }) {
         addToast("Watchlist cleared", "info");
     };
 
-    // 2. Comparison System (up to 4 properties)
+    // 4. Comparison System (up to 4 properties)
     const [comparedProperties, setComparedProperties] = useState([]);
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
@@ -72,25 +153,20 @@ export function AppProvider({ children }) {
         addToast("Comparison cleared", "info");
     };
 
-    // 3. Global Toast Notifications
-    const [toasts, setToasts] = useState([]);
-
-    const addToast = (message, type = "info") => {
-        const id = `toast_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-        setToasts((prev) => [...prev, { id, message, type }]);
-
-        setTimeout(() => {
-            removeToast(id);
-        }, 4000);
-    };
-
-    const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
-
     return (
         <AppContext.Provider
             value={{
+                // Visitor Auth & Lead Gate
+                visitorUser,
+                isVisitorLoginOpen,
+                setIsVisitorLoginOpen,
+                visitorLoginMandatory,
+                setVisitorLoginMandatory,
+                visitorCountdown,
+                loginVisitor,
+                logoutVisitor,
+                openVisitorLogin,
+
                 // Watchlist
                 savedProperties,
                 isSaved,

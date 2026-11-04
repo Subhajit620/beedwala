@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Mail, MapPin, Sparkles, Landmark, Shield } from "lucide-react";
+import { ShieldCheck, Mail, MapPin, Landmark, Shield, Phone } from "lucide-react";
+import { VerifiedSealIcon } from "./BrandIcons";
 import logoImg from "../assets/logo.jpg";
 
 export default function Footer() {
@@ -22,7 +23,7 @@ export default function Footer() {
                         </p>
                         <div className="flex flex-wrap items-center gap-3 pt-1">
                             <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-400">
-                                <Sparkles size={13} className="text-amber-400" />
+                                <VerifiedSealIcon size={13} className="text-amber-400" />
                                 <span>Verified Bank Notices</span>
                             </div>
                             <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-400">
@@ -74,6 +75,14 @@ export default function Footer() {
                             Help & Support
                         </h4>
                         <ul className="space-y-3 text-sm text-slate-400">
+                            <li className="flex items-center gap-2.5">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-emerald-400 border border-slate-800">
+                                    <Phone size={14} />
+                                </div>
+                                <a href="tel:+917439409340" className="font-bold text-slate-200 hover:text-amber-400 transition">
+                                    +91 74394 09340
+                                </a>
+                            </li>
                             <li className="flex items-center gap-2.5">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-amber-400 border border-slate-800">
                                     <Mail size={14} />

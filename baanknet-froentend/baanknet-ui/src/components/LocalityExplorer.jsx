@@ -1,6 +1,6 @@
 import React from "react";
-import { MapPin, Landmark, Building, Compass, Info, ArrowRight, CheckCircle2 } from "lucide-react";
-import { formatINR } from "../utils/formatters";
+import { MapPin, Landmark, Info, CheckCircle2 } from "lucide-react";
+import { PropertyFinderIcon } from "./BrandIcons";
 
 export default function LocalityExplorer({
     facets,
@@ -22,10 +22,11 @@ export default function LocalityExplorer({
         { name: "Barasat", count: 82 }
     ];
 
-    const banks = facets?.banks || [
+    const banks = (facets?.banks ? (facets.banks.some((b) => b.name && b.name.toLowerCase() === "hdfc bank") ? facets.banks : [...facets.banks, { name: "HDFC Bank", count: "Partner" }]) : null) || [
         { name: "Punjab National Bank", count: 306 },
         { name: "Indian Bank", count: 223 },
         { name: "State Bank of India", count: 201 },
+        { name: "HDFC Bank", count: "Partner" },
         { name: "Bank of India", count: 159 },
         { name: "Bank of Baroda", count: 155 }
     ];
@@ -37,7 +38,7 @@ export default function LocalityExplorer({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                     <div>
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">
-                            <Compass size={14} />
+                            <PropertyFinderIcon size={14} />
                             <span>Spatial & Regional Discovery</span>
                         </div>
                         <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">

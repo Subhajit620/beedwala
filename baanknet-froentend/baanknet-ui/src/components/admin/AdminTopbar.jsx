@@ -8,10 +8,7 @@ import {
     ExternalLink,
     LogOut,
     ChevronDown,
-    Shield,
-    Bell,
-    CheckCircle2,
-    Sparkles,
+    Settings,
     X
 } from "lucide-react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
@@ -41,7 +38,7 @@ export default function AdminTopbar({ onOpenMobile, onOpenCommandPalette }) {
             addToast("Initiating crawler synchronization...", "info");
             const res = await triggerCrawlerSync();
             if (res.success) {
-                addToast("Crawler sync finished successfully!", "success");
+                addToast("Crawler sync finished successfully", "success");
             }
         } catch (err) {
             console.error("Quick sync error:", err);
@@ -51,64 +48,70 @@ export default function AdminTopbar({ onOpenMobile, onOpenCommandPalette }) {
         }
     };
 
-    // Determine readable page title from current pathname
     const getPageTitle = () => {
         const path = location.pathname;
-        if (path === "/admin") return "Dashboard Overview";
-        if (path === "/admin/properties") return "Properties Directory";
-        if (path === "/admin/properties/new") return "Add New Auction Notice";
-        if (path.startsWith("/admin/properties/edit")) return "Edit Property Notice";
-        if (path === "/admin/banks") return "Partner Bank Institutions";
-        if (path === "/admin/duplicates") return "Smart Duplicate Auditor";
-        if (path === "/admin/audit-logs") return "Security & Compliance Logs";
-        if (path === "/admin/inquiries") return "Leads & Customer Inquiries";
-        if (path === "/admin/sync") return "Crawler & Sync Hub";
-        if (path === "/admin/analytics") return "Market & Valuation Analytics";
-        if (path === "/admin/settings") return "System Settings & Diagnostics";
-        return "Admin Portal";
+        if (path === "/admin") return "Overview";
+        if (path === "/admin/fresh-properties") return "Direct Listings";
+        if (path === "/admin/properties") return "Auction Directory";
+        if (path === "/admin/properties/new") return "New Property";
+        if (path.startsWith("/admin/properties/edit")) return "Edit Property";
+        if (path === "/admin/banks") return "Partner Banks";
+        if (path === "/admin/duplicates") return "Deduplication";
+        if (path === "/admin/audit-logs") return "Audit Log";
+        if (path === "/admin/inquiries") return "Buyer Inquiries";
+        if (path === "/admin/sync") return "Crawler Sync";
+        if (path === "/admin/analytics") return "Market Reports";
+        if (path === "/admin/settings") return "Settings";
+        return "Backoffice";
     };
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 sm:h-20 w-full items-center justify-between border-b border-slate-200 bg-white/95 px-4 sm:px-8 backdrop-blur-md">
-            {/* Left: Mobile Toggle & Page Title */}
-            <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between gap-3 border-b border-gray-200/80 bg-white/70 backdrop-blur-xl px-4 sm:px-6 lg:px-8">
+            {/* Left: Mobile Toggle & Breadcrumb Title */}
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
                 <button
                     onClick={onOpenMobile}
-                    className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hidden cursor-pointer"
-                    aria-label="Open Sidebar Menu"
+                    className="shrink-0 rounded-lg border border-gray-200 bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200 lg:hidden cursor-pointer"
+                    aria-label="Open menu"
                 >
-                    <Menu size={22} />
+                    <Menu size={18} />
                 </button>
 
-                <div>
-                    <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
+                <div className="flex items-center gap-2 text-sm min-w-0">
+                    <span className="hidden sm:inline text-gray-400 font-medium">Admin</span>
+                    <span className="hidden sm:inline text-gray-300">/</span>
+                    <h1 className="truncate font-semibold text-gray-900">
                         {getPageTitle()}
                     </h1>
-                    <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
-                        <span>Admin</span>
-                        <span>/</span>
-                        <span className="text-amber-600">{getPageTitle()}</span>
-                    </div>
                 </div>
             </div>
 
-            {/* Right: Quick Search Form, Command Palette, Actions, Profile */}
-            <div className="flex items-center gap-2.5 sm:gap-4">
-                {/* Interactive Quick Search Form in Admin Topbar */}
+            {/* Right: Search, Actions, Profile */}
+            <div className="flex shrink-0 items-center gap-2">
+                <button
+                    type="button"
+                    onClick={onOpenCommandPalette}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 md:hidden cursor-pointer"
+                    aria-label="Search"
+                    title="Search"
+                >
+                    <Search size={15} />
+                </button>
+
                 <form onSubmit={handleSearchSubmit} className="hidden md:flex relative items-center">
-                    <Search size={14} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+                    <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Quick search notices, banks, IDs..."
-                        className="h-10 w-48 lg:w-64 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/15 transition shadow-2xs"
+                        placeholder="Search notices, banks, IDs..."
+                        className="h-8 w-48 lg:w-64 rounded-lg border border-gray-200 bg-gray-100 pl-8 pr-11 text-xs font-medium text-gray-800 placeholder-gray-400 outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition"
                     />
                     {searchQuery ? (
                         <button
                             type="button"
                             onClick={() => setSearchQuery("")}
-                            className="absolute right-2.5 text-slate-400 hover:text-slate-700"
+                            className="absolute right-2.5 text-gray-400 hover:text-gray-700"
                         >
                             <X size={13} />
                         </button>
@@ -116,79 +119,80 @@ export default function AdminTopbar({ onOpenMobile, onOpenCommandPalette }) {
                         <button
                             type="button"
                             onClick={onOpenCommandPalette}
-                            title="Open Command Palette (Ctrl+K)"
-                            className="absolute right-2 px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400 bg-white border border-slate-200 shadow-2xs hover:bg-slate-100"
+                            title="Command Palette (Ctrl+K)"
+                            className="absolute right-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-500 bg-white border border-gray-200 hover:bg-gray-50"
                         >
                             ⌘K
                         </button>
                     )}
                 </form>
 
-                {/* Trigger Sync Button */}
                 <button
                     onClick={handleQuickSync}
                     disabled={syncing}
                     title="Run Crawler Sync"
-                    className="hidden lg:inline-flex items-center gap-1.5 h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:border-amber-300 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="hidden xl:inline-flex items-center gap-1.5 h-8 rounded-lg border border-gray-200 bg-gray-100 px-2.5 text-xs font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900 transition cursor-pointer disabled:opacity-50"
                 >
-                    <RefreshCw size={14} className={syncing ? "animate-spin text-amber-600" : "text-slate-500"} />
-                    <span>{syncing ? "Syncing..." : "Sync Data"}</span>
+                    <RefreshCw size={13} className={syncing ? "animate-spin text-red-600" : "text-gray-500"} />
+                    <span>{syncing ? "Syncing..." : "Sync"}</span>
                 </button>
 
-                {/* Add Property CTA */}
+                <Link
+                    to="/admin/fresh-properties"
+                    title="Manage Direct Sale Properties"
+                    className="inline-flex items-center gap-1.5 h-8 rounded-lg border border-gray-300 bg-gray-100 px-2.5 text-xs font-semibold text-gray-800 hover:bg-gray-200 transition"
+                >
+                    <span className="hidden sm:inline">Direct Sale</span>
+                    <span className="sm:hidden">Direct</span>
+                </Link>
+
                 <Link
                     to="/admin/properties/new"
-                    className="inline-flex items-center gap-1.5 h-10 rounded-xl bg-slate-950 px-3.5 sm:px-4 text-xs font-bold text-amber-400 hover:bg-slate-900 hover:shadow-md hover:shadow-amber-500/10 transition cursor-pointer active:scale-95"
+                    title="Create New Listing"
+                    className="inline-flex items-center gap-1 h-8 rounded-lg bg-red-600 px-3 text-xs font-semibold text-white hover:bg-red-700 shadow-2xs transition"
                 >
-                    <Plus size={16} className="text-amber-400" />
-                    <span className="hidden sm:inline">Add Listing</span>
+                    <Plus size={14} />
+                    <span className="hidden sm:inline">New Listing</span>
                 </Link>
 
                 {/* Admin Profile Dropdown */}
-                <div className="relative">
+                <div className="relative pl-1 border-l border-gray-200">
                     <button
                         onClick={() => setProfileOpen(!profileOpen)}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 sm:px-3 sm:py-2 hover:bg-slate-50 transition cursor-pointer"
+                        className="flex items-center gap-2 rounded-lg p-1 hover:bg-gray-100 transition cursor-pointer"
                     >
-                        <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-slate-950 text-xs font-black text-amber-400">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow-2xs">
                             {adminUser?.name ? adminUser.name.charAt(0).toUpperCase() : "A"}
                         </div>
-                        <div className="hidden sm:block text-left leading-tight">
-                            <span className="block text-xs font-bold text-slate-900">
-                                {adminUser?.name || "Administrator"}
-                            </span>
-                            <span className="block text-[10px] text-slate-400 font-semibold">Super Admin</span>
-                        </div>
-                        <ChevronDown size={14} className="text-slate-400 hidden sm:block" />
+                        <ChevronDown size={13} className="text-gray-400 hidden sm:block" />
                     </button>
 
-                    {/* Profile Dropdown Menu */}
                     {profileOpen && (
                         <>
                             <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)}></div>
-                            <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50 animate-scale-up">
-                                <div className="px-3 py-2 border-b border-slate-100">
-                                    <p className="text-xs font-bold text-slate-900">{adminUser?.name || "Admin"}</p>
-                                    <p className="text-[10px] text-slate-500 truncate">{adminUser?.email || "admin@bidwallah.com"}</p>
+                            <div className="absolute right-0 mt-1.5 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg z-50">
+                                <div className="px-2.5 py-2 border-b border-slate-100">
+                                    <p className="text-xs font-semibold text-slate-900">{adminUser?.name || "Administrator"}</p>
+                                    <p className="text-[11px] text-slate-500 truncate">{adminUser?.email || "admin@bidwallah.com"}</p>
                                 </div>
 
                                 <div className="py-1 space-y-0.5">
                                     <Link
                                         to="/admin/settings"
                                         onClick={() => setProfileOpen(false)}
-                                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                                        className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
                                     >
-                                        <Shield size={14} className="text-slate-400" />
-                                        <span>Security & Settings</span>
+                                        <Settings size={13} className="text-slate-400" />
+                                        <span>Settings</span>
                                     </Link>
                                     <Link
                                         to="/"
                                         target="_blank"
                                         onClick={() => setProfileOpen(false)}
-                                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                                        className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
                                     >
-                                        <ExternalLink size={14} className="text-slate-400" />
-                                        <span>View Public Website</span>
+                                        <ExternalLink size={13} className="text-slate-400" />
+                                        <span>Public Site</span>
                                     </Link>
                                 </div>
 
@@ -198,9 +202,9 @@ export default function AdminTopbar({ onOpenMobile, onOpenCommandPalette }) {
                                             setProfileOpen(false);
                                             logout();
                                         }}
-                                        className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                        className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                                     >
-                                        <LogOut size={14} />
+                                        <LogOut size={13} />
                                         <span>Sign Out</span>
                                     </button>
                                 </div>

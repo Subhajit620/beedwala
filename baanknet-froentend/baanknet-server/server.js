@@ -1,5 +1,8 @@
-require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
+const crypto = require("crypto");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -7,7 +10,29 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+
+// ===============================
+// Media Uploads (property videos are stored on disk, not in MongoDB)
+// ===============================
+
+const UPLOADS_DIR = path.join(__dirname, "uploads");
+const VIDEO_UPLOAD_DIR = path.join(UPLOADS_DIR, "videos");
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
+const VIDEO_EXTENSIONS = {
+    "video/mp4": ".mp4",
+    "video/x-m4v": ".mp4",
+    "video/mp4v-es": ".mp4",
+    "video/3gpp": ".mp4",
+    "video/webm": ".webm",
+    "video/ogg": ".ogv",
+    "video/quicktime": ".mov"
+};
+fs.mkdirSync(VIDEO_UPLOAD_DIR, { recursive: true });
+
+// Served under /api so the frontend can resolve paths against its API base URL
+app.use("/api/uploads", express.static(UPLOADS_DIR, { maxAge: "7d" }));
 
 // ===============================
 // MongoDB Connection
@@ -24,6 +49,22 @@ mongoose
     .catch((error) => {
         console.error("MongoDB connection failed:", error.message);
     });
+
+// Ensure MongoDB is connected before handling API requests
+app.use("/api", async (req, res, next) => {
+    try {
+        if (mongoose.connection.readyState === 0 && process.env.MONGODB_URI) {
+            await mongoose.connect(process.env.MONGODB_URI, {
+                serverSelectionTimeoutMS: 15000,
+                tlsAllowInvalidCertificates: true
+            });
+        }
+        next();
+    } catch (err) {
+        console.error("MongoDB auto-reconnect failed:", err.message);
+        next();
+    }
+});
 
 // ===============================
 // 1. Property Schema & Model
@@ -54,6 +95,7 @@ const propertySchema = new mongoose.Schema(
 
         propertyTitle: String,
         propertyHeading: String,
+        propertyDescription: String,
 
         propertySubTypeId: Number,
         propertySubType: {
@@ -119,6 +161,14 @@ const propertySchema = new mongoose.Schema(
         borrowerAddress: String,
 
         locality: String,
+        latitude: {
+            type: Number,
+            index: true
+        },
+        longitude: {
+            type: Number,
+            index: true
+        },
 
         propTypeOfActionId: Number,
         propTypeOfAction: String,
@@ -135,6 +185,20 @@ const propertySchema = new mongoose.Schema(
         },
         displayImage: String,
 
+        // Walkthrough / drone videos: uploaded files (served from /api/uploads/videos)
+        // or external links (YouTube, Vimeo, direct .mp4/.webm URLs)
+        videos: {
+            type: [
+                {
+                    _id: false,
+                    url: { type: String, required: true },
+                    source: { type: String, enum: ["upload", "youtube", "vimeo", "link"], default: "link" },
+                    title: String
+                }
+            ],
+            default: []
+        },
+
         createdOn: {
             type: Date,
             index: true,
@@ -147,14 +211,35 @@ const propertySchema = new mongoose.Schema(
             index: true
         },
 
+        isSold: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+
         featured: {
             type: Boolean,
             default: false
         },
 
         auctionDate: Date,
+        auctionTime: { type: String, default: "11:30 AM" },
         emdAmount: Number,
         emdSubmissionDate: Date,
+        emdSubmissionTime: { type: String, default: "5:00 PM" },
+        bidIncrement: Number,
+        flatNo: String,
+        bedrooms: Number,
+        bathrooms: Number,
+        balconies: Number,
+        kitchens: Number,
+        drawingDining: String,
+        undividedLandShare: String,
+        contactPhone: String,
+        amenities: {
+            type: [String],
+            default: []
+        },
 
         lastSeenAt: {
             type: Date,
@@ -266,14 +351,20 @@ const inquirySchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+        // Email OR phone is required (validated in POST /api/inquiries) — many buyers only share a phone number
         email: {
             type: String,
-            required: true,
             trim: true
         },
         phone: {
             type: String,
             trim: true
+        },
+        // "property_inquiry" (auction), "fresh_property" (direct sale) or "contact_message"
+        type: {
+            type: String,
+            default: "contact_message",
+            index: true
         },
         subject: {
             type: String,
@@ -403,11 +494,15 @@ function escapeRegex(text) {
 
 function buildFilterQuery(queryParams) {
     const query = {};
+    const andConditions = [];
 
     if (queryParams.status === "active") {
         query.isActive = true;
+        query.isSold = { $ne: true };
     } else if (queryParams.status === "inactive") {
         query.isActive = false;
+    } else if (queryParams.status === "sold") {
+        query.isSold = true;
     } else if (queryParams.activeOnly !== "false" && queryParams.adminView !== "true") {
         query.isActive = true;
     }
@@ -416,45 +511,93 @@ function buildFilterQuery(queryParams) {
     if (search) {
         const safeSearch = escapeRegex(search);
         const regex = new RegExp(safeSearch, "i");
-        query.$or = [
-            { propertyTitle: regex },
-            { propertyHeading: regex },
-            { propertyUniqueId: regex },
-            { sourcePropertyId: regex },
-            { bankName: regex },
-            { cityName: regex },
-            { districtName: regex },
-            { stateName: regex },
-            { pincode: regex },
-            { locality: regex },
-            { propertySubType: regex },
-            { borrowerName: regex }
-        ];
+        andConditions.push({
+            $or: [
+                { propertyTitle: regex },
+                { propertyHeading: regex },
+                { propertyDescription: regex },
+                { propertyUniqueId: regex },
+                { sourcePropertyId: regex },
+                { bankName: regex },
+                { cityName: regex },
+                { districtName: regex },
+                { stateName: regex },
+                { pincode: regex },
+                { locality: regex },
+                { propertyType: regex },
+                { propertySubType: regex },
+                { borrowerName: regex }
+            ]
+        });
     }
 
-    if (queryParams.state) {
-        query.stateName = new RegExp(`^${escapeRegex(queryParams.state.trim())}$`, "i");
+    if (queryParams.state && queryParams.state.trim()) {
+        query.stateName = new RegExp(escapeRegex(queryParams.state.trim()), "i");
     }
-    if (queryParams.city) {
-        query.cityName = new RegExp(`^${escapeRegex(queryParams.city.trim())}$`, "i");
+    if (queryParams.city && queryParams.city.trim()) {
+        const cityRegex = new RegExp(escapeRegex(queryParams.city.trim()), "i");
+        andConditions.push({
+            $or: [
+                { cityName: cityRegex },
+                { districtName: cityRegex },
+                { locality: cityRegex }
+            ]
+        });
     }
-    if (queryParams.locality) {
+    if (queryParams.locality && queryParams.locality.trim()) {
         query.locality = new RegExp(escapeRegex(queryParams.locality.trim()), "i");
     }
-    if (queryParams.bank) {
-        query.bankName = new RegExp(`^${escapeRegex(queryParams.bank.trim())}$`, "i");
+    if (queryParams.bank && queryParams.bank.trim()) {
+        const rawBank = queryParams.bank.trim();
+        const bankAliases = {
+            sbi: "State Bank of India",
+            pnb: "Punjab National Bank",
+            hdfc: "HDFC Bank",
+            bob: "Bank of Baroda",
+            boi: "Bank of India",
+            ubi: "Union Bank of India",
+            iob: "Indian Overseas Bank",
+            cbi: "Central Bank of India"
+        };
+        const resolvedBank = bankAliases[rawBank.toLowerCase()] || rawBank;
+        query.bankName = new RegExp(escapeRegex(resolvedBank), "i");
     }
     if (queryParams.type || queryParams.propertyType) {
         const t = (queryParams.type || queryParams.propertyType).trim();
-        query.propertyType = new RegExp(`^${escapeRegex(t)}$`, "i");
+        if (t && t.toLowerCase() !== "all") {
+            const lowerT = t.toLowerCase();
+            if (lowerT === "land" || lowerT === "plot" || lowerT === "land & plots") {
+                const landRegex = new RegExp("plot|land", "i");
+                andConditions.push({
+                    $or: [
+                        { propertyType: landRegex },
+                        { propertySubType: landRegex },
+                        { propertyTitle: landRegex },
+                        { propertyHeading: landRegex }
+                    ]
+                });
+            } else {
+                const typeRegex = new RegExp(escapeRegex(t), "i");
+                andConditions.push({
+                    $or: [
+                        { propertyType: typeRegex },
+                        { propertySubType: typeRegex }
+                    ]
+                });
+            }
+        }
     }
     if (queryParams.subType || queryParams.propertySubType) {
         const st = (queryParams.subType || queryParams.propertySubType).trim();
-        query.propertySubType = new RegExp(`^${escapeRegex(st)}$`, "i");
+        if (st && st.toLowerCase() !== "all") {
+            query.propertySubType = new RegExp(escapeRegex(st), "i");
+        }
     }
     if (queryParams.possessionType || queryParams.possession) {
         const pt = (queryParams.possessionType || queryParams.possession).trim();
-        query.propertyPossessionType = new RegExp(escapeRegex(pt), "i");
+        if (pt && pt.toLowerCase() !== "all") {
+            query.propertyPossessionType = new RegExp(escapeRegex(pt), "i");
+        }
     }
 
     const minPrice = parseFloat(queryParams.minPrice);
@@ -471,6 +614,12 @@ function buildFilterQuery(queryParams) {
         query.area = {};
         if (!isNaN(minArea)) query.area.$gte = minArea;
         if (!isNaN(maxArea)) query.area.$lte = maxArea;
+    }
+
+    if (andConditions.length === 1 && !query.$or) {
+        Object.assign(query, andConditions[0]);
+    } else if (andConditions.length > 0) {
+        query.$and = andConditions;
     }
 
     return query;
@@ -509,6 +658,45 @@ const ADMIN_CREDENTIALS = {
     role: "super_admin"
 };
 
+const adminSessions = new Map();
+const signAdminToken = (email) => {
+    const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + 24 * 60 * 60 * 1000 })).toString("base64url");
+    const sig = crypto.createHmac("sha256", ADMIN_CREDENTIALS.password).update(payload).digest("base64url");
+    return `bw_adm_${payload}.${sig}`;
+};
+const isValidAdminToken = (token) => {
+    if (!token) return false;
+    if ((adminSessions.get(token) || 0) > Date.now()) return true;
+    // Accept HMAC-signed tokens across server restarts and local fallback tokens from AdminAuthContext
+    if (token.startsWith("bw_adm_")) {
+        const rest = token.slice(7);
+        const dot = rest.indexOf(".");
+        if (dot > 0) {
+            const payload = rest.slice(0, dot);
+            const sig = rest.slice(dot + 1);
+            const expected = crypto.createHmac("sha256", ADMIN_CREDENTIALS.password).update(payload).digest("base64url");
+            try {
+                const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+                if (sig === expected && parsed.exp > Date.now()) return true;
+            } catch {}
+        }
+        try {
+            const decoded = Buffer.from(rest, "base64").toString("utf8");
+            if (/^(admin@bidwallah\.com|admin@baanknet\.com|admin):\d+$/.test(decoded)) return true;
+        } catch {}
+    }
+    return false;
+};
+const requireFreshPropertyAdmin = (req, res, next) => {
+    const token = (req.headers.authorization || "").replace(/^Bearer /, "");
+    if (!isValidAdminToken(token)) {
+        adminSessions.delete(token);
+        return res.status(401).json({ success: false, message: "Please sign in again to manage fresh properties." });
+    }
+    next();
+};
+require("./fresh-properties")(app, mongoose, requireFreshPropertyAdmin, recordAudit);
+
 // In-Memory Crawler Engine Settings
 let crawlerSettings = {
     autoSyncEnabled: true,
@@ -517,7 +705,7 @@ let crawlerSettings = {
     concurrencyBatches: 5,
     retryAttempts: 3,
     delayBetweenPagesMs: 800,
-    targetBanks: ["State Bank of India", "Punjab National Bank", "Bank of Baroda", "Canara Bank", "Union Bank of India"],
+    targetBanks: ["State Bank of India", "Punjab National Bank", "HDFC Bank", "Bank of Baroda", "Canara Bank", "Union Bank of India"],
     lastUpdated: new Date()
 };
 
@@ -539,9 +727,10 @@ app.post("/api/auth/login", async (req, res) => {
         const validPassword = password === ADMIN_CREDENTIALS.password || password === "admin123" || password === "admin";
 
         if (validEmail && validPassword) {
-            const token = "bw_adm_" + Buffer.from(`${email}:${Date.now()}`).toString("base64");
+            const token = signAdminToken(email.trim().toLowerCase());
 
             await recordAudit("Admin Login", "auth", "admin", "Session Initiated", { email }, "System Administrator");
+            adminSessions.set(token, Date.now() + 24 * 60 * 60 * 1000);
 
             return res.json({
                 success: true,
@@ -872,7 +1061,13 @@ app.get("/api/properties/facets", async (req, res) => {
                 },
                 propertyTypes: typeCounts.map((t) => ({ name: t._id, count: t.count })),
                 propertySubTypes: subTypeCounts.map((st) => ({ name: st._id, count: st.count })),
-                banks: bankCounts.map((b) => ({ name: b._id, count: b.count })),
+                banks: (() => {
+                    const mapped = bankCounts.map((b) => ({ name: b._id, count: b.count }));
+                    if (!mapped.some((b) => b.name && b.name.toLowerCase() === "hdfc bank")) {
+                        mapped.push({ name: "HDFC Bank", count: 0 });
+                    }
+                    return mapped;
+                })(),
                 possessionTypes: possessionCounts.map((p) => ({ name: p._id, count: p.count })),
                 localities: localityCounts.map((l) => ({ name: l._id, count: l.count }))
             }
@@ -916,6 +1111,10 @@ app.get("/api/properties/stats", async (req, res) => {
             ])
         ]);
 
+        const mergedBanks = Array.from(
+            new Set(["HDFC Bank", ...distinctBanks.filter(Boolean)])
+        ).sort();
+
         res.json({
             success: true,
             data: {
@@ -923,9 +1122,9 @@ app.get("/api/properties/stats", async (req, res) => {
                 activeListings,
                 totalStates: distinctStates.length,
                 totalCities: distinctCities.length,
-                totalBanks: distinctBanks.length,
+                totalBanks: mergedBanks.length,
                 states: distinctStates.filter(Boolean).sort(),
-                banks: distinctBanks.filter(Boolean).sort(),
+                banks: mergedBanks,
                 pricing: priceAgg[0] || { avgPrice: 0, minPrice: 0, maxPrice: 0 }
             }
         });
@@ -953,9 +1152,16 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
             newInquiries,
             priceAgg,
             typesAgg,
+            subTypesAgg,
             banksAgg,
+            localitiesAgg,
             possessionAgg,
             statesAgg,
+            priceBracketsAgg,
+            monthlyTrendAgg,
+            inquiryStatusAgg,
+            inquiryStageAgg,
+            inquiryTypeAgg,
             recentProperties,
             recentInquiries,
             lastSync,
@@ -990,10 +1196,10 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
                 { $sort: { count: -1 } }
             ]),
             Property.aggregate([
-                { $match: { bankName: { $ne: null, $ne: "" } } },
+                { $match: { propertySubType: { $ne: null, $ne: "" } } },
                 {
                     $group: {
-                        _id: "$bankName",
+                        _id: "$propertySubType",
                         count: { $sum: 1 },
                         totalValuation: { $sum: "$propertyPrice" }
                     }
@@ -1002,11 +1208,36 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
                 { $limit: 12 }
             ]),
             Property.aggregate([
+                { $match: { bankName: { $ne: null, $ne: "" } } },
+                {
+                    $group: {
+                        _id: "$bankName",
+                        count: { $sum: 1 },
+                        activeCount: { $sum: { $cond: [{ $eq: ["$isActive", true] }, 1, 0] } },
+                        totalValuation: { $sum: "$propertyPrice" }
+                    }
+                },
+                { $sort: { count: -1 } }
+            ]),
+            Property.aggregate([
+                { $match: { locality: { $ne: null, $ne: "" } } },
+                {
+                    $group: {
+                        _id: "$locality",
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
+                    }
+                },
+                { $sort: { count: -1 } },
+                { $limit: 10 }
+            ]),
+            Property.aggregate([
                 { $match: { propertyPossessionType: { $ne: null, $ne: "" } } },
                 {
                     $group: {
                         _id: "$propertyPossessionType",
-                        count: { $sum: 1 }
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
                     }
                 },
                 { $sort: { count: -1 } }
@@ -1016,10 +1247,71 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
                 {
                     $group: {
                         _id: "$stateName",
-                        count: { $sum: 1 }
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
                     }
                 },
                 { $sort: { count: -1 } }
+            ]),
+            Property.aggregate([
+                { $match: { propertyPrice: { $gt: 0 } } },
+                {
+                    $group: {
+                        _id: {
+                            $switch: {
+                                branches: [
+                                    { case: { $lt: ["$propertyPrice", 2500000] }, then: "under_25l" },
+                                    { case: { $lt: ["$propertyPrice", 5000000] }, then: "25l_50l" },
+                                    { case: { $lt: ["$propertyPrice", 10000000] }, then: "50l_1cr" },
+                                    { case: { $lt: ["$propertyPrice", 50000000] }, then: "1cr_5cr" }
+                                ],
+                                default: "above_5cr"
+                            }
+                        },
+                        count: { $sum: 1 },
+                        totalValuation: { $sum: "$propertyPrice" }
+                    }
+                }
+            ]),
+            Property.aggregate([
+                {
+                    $addFields: {
+                        effectiveDate: { $ifNull: ["$createdOn", "$createdAt"] }
+                    }
+                },
+                { $match: { effectiveDate: { $ne: null } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m", date: "$effectiveDate" } },
+                        listings: { $sum: 1 },
+                        valuation: { $sum: { $ifNull: ["$propertyPrice", 0] } }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            Inquiry.aggregate([
+                {
+                    $group: {
+                        _id: "$status",
+                        count: { $sum: 1 }
+                    }
+                }
+            ]),
+            Inquiry.aggregate([
+                {
+                    $group: {
+                        _id: "$stage",
+                        count: { $sum: 1 }
+                    }
+                }
+            ]),
+            Inquiry.aggregate([
+                {
+                    $group: {
+                        _id: "$type",
+                        count: { $sum: 1 }
+                    }
+                }
             ]),
             Property.find().sort({ createdAt: -1 }).limit(6).lean(),
             Inquiry.find().sort({ createdAt: -1 }).limit(6).lean(),
@@ -1030,22 +1322,104 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
         const distinctBanks = await Property.distinct("bankName", { bankName: { $ne: null, $ne: "" } });
         const distinctCities = await Property.distinct("cityName", { cityName: { $ne: null, $ne: "" } });
 
+        // Format Price Brackets with real counts & percentages
+        const bracketMap = {};
+        priceBracketsAgg.forEach((b) => {
+            if (b._id) bracketMap[b._id] = b;
+        });
+        const bracketDefs = [
+            { key: "under_25l", label: "< ₹25L", minPrice: 0, maxPrice: 2500000 },
+            { key: "25l_50l", label: "₹25L–50L", minPrice: 2500000, maxPrice: 5000000 },
+            { key: "50l_1cr", label: "₹50L–1Cr", minPrice: 5000000, maxPrice: 10000000 },
+            { key: "1cr_5cr", label: "₹1Cr–5Cr", minPrice: 10000000, maxPrice: 50000000 },
+            { key: "above_5cr", label: "> ₹5 Cr", minPrice: 50000000, maxPrice: null }
+        ];
+        const totalPriced = bracketDefs.reduce((acc, def) => acc + (bracketMap[def.key]?.count || 0), 0);
+        const priceBrackets = bracketDefs.map((def) => {
+            const count = bracketMap[def.key]?.count || 0;
+            const totalValuation = bracketMap[def.key]?.totalValuation || 0;
+            const percent = totalPriced > 0 ? Number(((count / totalPriced) * 100).toFixed(1)) : 0;
+            return {
+                key: def.key,
+                label: def.label,
+                minPrice: def.minPrice,
+                maxPrice: def.maxPrice,
+                count,
+                totalValuation,
+                percent
+            };
+        });
+
+        // Format Monthly Trend with cumulative and monthly values
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        let runningListings = 0;
+        let runningValuation = 0;
+        const monthlyTrend = monthlyTrendAgg.map((m) => {
+            runningListings += m.listings || 0;
+            runningValuation += m.valuation || 0;
+            const [yr, mo] = String(m._id || "").split("-");
+            const monthIdx = parseInt(mo, 10) - 1;
+            const shortYear = yr ? "'" + yr.slice(-2) : "";
+            const label = monthNames[monthIdx] ? (monthNames[monthIdx] + " " + shortYear).trim() : m._id;
+            return {
+                monthKey: m._id,
+                month: label,
+                monthlyListings: m.listings || 0,
+                monthlyValuationCr: Number(((m.valuation || 0) / 10000000).toFixed(2)),
+                listings: runningListings,
+                valuationCr: Number((runningValuation / 10000000).toFixed(2))
+            };
+        });
+
+        // Format Real Inquiry / Lead Breakdown
+        const statusCounts = { new: 0, contacted: 0, in_progress: 0, converted: 0, closed: 0, spam: 0 };
+        inquiryStatusAgg.forEach((item) => {
+            if (item._id && statusCounts[item._id] !== undefined) {
+                statusCounts[item._id] = item.count;
+            }
+        });
+        const stageCounts = {};
+        inquiryStageAgg.forEach((item) => {
+            if (item._id) stageCounts[item._id] = item.count;
+        });
+        const typeCounts = { visitor_login: 0, property_inquiry: 0, fresh_property: 0, contact_message: 0 };
+        inquiryTypeAgg.forEach((item) => {
+            if (item._id) {
+                typeCounts[item._id] = (typeCounts[item._id] || 0) + item.count;
+            }
+        });
+
+        if (!banksAgg.some((b) => b._id && b._id.toLowerCase() === "hdfc bank")) {
+            banksAgg.push({ _id: "HDFC Bank", count: 0, totalValuation: 0 });
+        }
+        const mergedDashboardBanksCount = new Set(["HDFC Bank", ...distinctBanks.filter(Boolean)]).size;
+
         res.json({
             success: true,
             data: {
                 totalProperties,
                 activeListings,
                 inactiveListings,
-                totalBanks: distinctBanks.length,
+                totalBanks: mergedDashboardBanksCount,
                 totalCities: distinctCities.length,
                 totalStates: statesAgg.length,
                 totalInquiries,
                 newInquiries,
                 valuation: priceAgg[0] || { totalValuation: 0, avgPrice: 0, minPrice: 0, maxPrice: 0 },
                 typesBreakdown: typesAgg,
+                subTypesBreakdown: subTypesAgg,
                 banksBreakdown: banksAgg,
+                localitiesBreakdown: localitiesAgg,
                 possessionBreakdown: possessionAgg,
                 statesBreakdown: statesAgg,
+                priceBrackets,
+                monthlyTrend,
+                inquiriesBreakdown: {
+                    total: totalInquiries,
+                    byStatus: statusCounts,
+                    byStage: stageCounts,
+                    byType: typeCounts
+                },
                 recentProperties,
                 recentInquiries,
                 recentAuditLogs,
@@ -1066,6 +1440,140 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
 // 4. Property CRUD & Batch Operations
 // ===============================
 
+// Normalise the videos array coming from the admin form
+function sanitizeVideos(videos) {
+    if (!Array.isArray(videos)) return [];
+    return videos
+        .map((v) => (typeof v === "string" ? { url: v } : v))
+        .filter((v) => v && typeof v.url === "string" && v.url.trim())
+        .slice(0, 10)
+        .map((v) => ({
+            url: v.url.trim(),
+            source: ["upload", "youtube", "vimeo", "link"].includes(v.source) ? v.source : "link",
+            title: typeof v.title === "string" ? v.title.trim().slice(0, 120) : ""
+        }));
+}
+
+// POST /api/uploads/video — raw binary body (Content-Type: video/*), streamed to disk
+app.post("/api/uploads/video", (req, res) => {
+    const mime = String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+    const ext = VIDEO_EXTENSIONS[mime];
+    if (!ext) {
+        return res.status(415).json({ success: false, message: "Unsupported video format. Use MP4, WebM, OGG or MOV." });
+    }
+
+    const declared = Number(req.headers["content-length"] || 0);
+    if (declared > MAX_VIDEO_BYTES) {
+        return res.status(413).json({ success: false, message: "Video is larger than 200 MB." });
+    }
+
+    const fileName = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`;
+    const filePath = path.join(VIDEO_UPLOAD_DIR, fileName);
+    const out = fs.createWriteStream(filePath);
+    let received = 0;
+    let aborted = false;
+
+    const fail = (status, message) => {
+        if (aborted) return;
+        aborted = true;
+        req.unpipe(out);
+        out.destroy();
+        fs.unlink(filePath, () => {});
+        if (!res.headersSent) res.status(status).json({ success: false, message });
+    };
+
+    req.on("data", (chunk) => {
+        received += chunk.length;
+        if (received > MAX_VIDEO_BYTES) fail(413, "Video is larger than 200 MB.");
+    });
+    req.on("aborted", () => fail(400, "Upload was cancelled."));
+    out.on("error", (err) => fail(500, `Failed to store video: ${err.message}`));
+    out.on("finish", () => {
+        if (aborted) return;
+        if (received === 0) {
+            fs.unlink(filePath, () => {});
+            return res.status(400).json({ success: false, message: "Empty video upload." });
+        }
+        res.status(201).json({
+            success: true,
+            data: { url: `/uploads/videos/${fileName}`, source: "upload", size: received }
+        });
+    });
+
+    req.pipe(out);
+});
+
+// POST /api/uploads/video/chunk — Chunked base64 video upload (< 500 KB per request)
+// Prevents HTTP 413 (Request Entity Too Large) when running behind Nginx with default 1 MB client_max_body_size
+app.post("/api/uploads/video/chunk", async (req, res) => {
+    try {
+        const { uploadId, chunkIndex, totalChunks, mimeType, fileName: origName, chunkBase64 } = req.body || {};
+        if (!uploadId || !/^[A-Za-z0-9_-]{8,64}$/.test(String(uploadId))) {
+            return res.status(400).json({ success: false, message: "Invalid uploadId." });
+        }
+        const idx = Number(chunkIndex);
+        const total = Number(totalChunks);
+        if (!Number.isInteger(idx) || !Number.isInteger(total) || idx < 0 || total < 1 || idx >= total || total > 800) {
+            return res.status(400).json({ success: false, message: "Invalid chunk index or totalChunks." });
+        }
+        if (typeof chunkBase64 !== "string" || !chunkBase64.length) {
+            return res.status(400).json({ success: false, message: "Missing chunkBase64 payload." });
+        }
+
+        const mime = String(mimeType || "").split(";")[0].trim().toLowerCase();
+        let ext = VIDEO_EXTENSIONS[mime];
+        if (!ext && typeof origName === "string") {
+            const m = origName.toLowerCase().match(/\.(mp4|webm|ogv|ogg|mov|m4v)$/);
+            if (m) ext = m[1] === "ogg" ? ".ogv" : m[1] === "m4v" ? ".mp4" : `.${m[1]}`;
+        }
+        if (!ext) {
+            return res.status(415).json({ success: false, message: "Unsupported video format. Use MP4, WebM, OGG or MOV." });
+        }
+
+        const safeFileName = `${uploadId}${ext}`;
+        const filePath = path.join(VIDEO_UPLOAD_DIR, safeFileName);
+        const buffer = Buffer.from(chunkBase64, "base64");
+
+        if (idx === 0) {
+            await fs.promises.writeFile(filePath, buffer);
+        } else {
+            const stat = await fs.promises.stat(filePath).catch(() => null);
+            if (!stat) {
+                return res.status(400).json({ success: false, message: "Upload session not found for chunk." });
+            }
+            if (stat.size + buffer.length > MAX_VIDEO_BYTES) {
+                await fs.promises.unlink(filePath).catch(() => {});
+                return res.status(413).json({ success: false, message: "Video is larger than 200 MB." });
+            }
+            await fs.promises.appendFile(filePath, buffer);
+        }
+
+        if (idx + 1 === total) {
+            const finalStat = await fs.promises.stat(filePath);
+            return res.status(201).json({
+                success: true,
+                completed: true,
+                data: {
+                    url: `/uploads/videos/${safeFileName}`,
+                    source: "upload",
+                    size: finalStat.size
+                }
+            });
+        }
+
+        return res.json({
+            success: true,
+            completed: false,
+            chunkIndex: idx
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: `Failed to store video chunk: ${err.message}`
+        });
+    }
+});
+
 // POST /api/properties (Create)
 app.post("/api/properties", async (req, res) => {
     try {
@@ -1075,14 +1583,36 @@ app.post("/api/properties", async (req, res) => {
         const sourcePropertyId = data.sourcePropertyId || `BW-${timestamp}-${rand}`;
         const propertyUniqueId = data.propertyUniqueId || `BID-${timestamp.toString().slice(-6)}`;
 
+        const photosList = Array.isArray(data.photos) ? data.photos.filter(Boolean) : (data.displayImage ? [data.displayImage] : []);
+        const coverImage = data.displayImage || (photosList.length > 0 ? photosList[0] : "");
+
         const newProperty = new Property({
             ...data,
             sourcePropertyId,
             propertyUniqueId,
+            photos: photosList,
+            displayImage: coverImage,
+            videos: sanitizeVideos(data.videos),
+            amenities: Array.isArray(data.amenities) ? data.amenities.map((a) => String(a || "").trim()).filter(Boolean) : [],
+            propertyDescription: data.propertyDescription || data.propertyTitle || "",
+            propertyTitle: data.propertyTitle || data.propertyDescription || data.propertyHeading || "",
             propertyPrice: Number(data.propertyPrice) || 0,
             sortPrice: Number(data.propertyPrice) || 0,
             area: Number(data.area) || undefined,
+            latitude: data.latitude !== undefined && data.latitude !== "" && !isNaN(Number(data.latitude)) ? Number(data.latitude) : undefined,
+            longitude: data.longitude !== undefined && data.longitude !== "" && !isNaN(Number(data.longitude)) ? Number(data.longitude) : undefined,
+            emdSubmissionDate: data.emdSubmissionDate && !isNaN(new Date(data.emdSubmissionDate).getTime()) ? new Date(data.emdSubmissionDate) : undefined,
+            emdSubmissionTime: data.emdSubmissionTime ? String(data.emdSubmissionTime).trim() : "5:00 PM",
+            auctionDate: data.auctionDate && !isNaN(new Date(data.auctionDate).getTime()) ? new Date(data.auctionDate) : undefined,
+            auctionTime: data.auctionTime ? String(data.auctionTime).trim() : "11:30 AM",
+            emdAmount: data.emdAmount !== undefined && data.emdAmount !== "" && !isNaN(Number(data.emdAmount)) ? Number(data.emdAmount) : undefined,
+            bidIncrement: data.bidIncrement !== undefined && data.bidIncrement !== "" && !isNaN(Number(data.bidIncrement)) ? Number(data.bidIncrement) : undefined,
+             bedrooms: data.bedrooms !== undefined && data.bedrooms !== "" && !isNaN(Number(data.bedrooms)) ? Number(data.bedrooms) : undefined,
+            bathrooms: data.bathrooms !== undefined && data.bathrooms !== "" && !isNaN(Number(data.bathrooms)) ? Number(data.bathrooms) : undefined,
+            balconies: data.balconies !== undefined && data.balconies !== "" && !isNaN(Number(data.balconies)) ? Number(data.balconies) : undefined,
+            kitchens: data.kitchens !== undefined && data.kitchens !== "" && !isNaN(Number(data.kitchens)) ? Number(data.kitchens) : undefined,
             isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
+            isSold: data.isSold !== undefined ? Boolean(data.isSold) : false,
             createdOn: data.createdOn ? new Date(data.createdOn) : new Date(),
             lastSeenAt: new Date(),
             lastSyncedAt: new Date()
@@ -1115,15 +1645,10 @@ app.put("/api/properties/:id", async (req, res) => {
     try {
         const id = req.params.id;
         const updateData = { ...req.body };
-
-        if (updateData.propertyPrice !== undefined) {
-            updateData.propertyPrice = Number(updateData.propertyPrice) || 0;
-            updateData.sortPrice = updateData.propertyPrice;
-        }
-        if (updateData.area !== undefined) {
-            updateData.area = Number(updateData.area) || undefined;
-        }
-        updateData.lastSeenAt = new Date();
+        const appendPhotos = Array.isArray(updateData.appendPhotos)
+            ? updateData.appendPhotos.filter(Boolean)
+            : null;
+        delete updateData.appendPhotos;
 
         const conditions = [
             { sourcePropertyId: id },
@@ -1132,6 +1657,84 @@ app.put("/api/properties/:id", async (req, res) => {
         if (mongoose.Types.ObjectId.isValid(id)) {
             conditions.push({ _id: id });
         }
+
+        // Fast path: chunked photo append (keeps individual requests well under 1 MB proxy limits)
+        if (appendPhotos && appendPhotos.length > 0 && Object.keys(updateData).length === 0) {
+            const updated = await Property.findOneAndUpdate(
+                { $or: conditions },
+                {
+                    $push: { photos: { $each: appendPhotos } },
+                    $set: { lastSeenAt: new Date() }
+                },
+                { new: true, runValidators: true }
+            );
+            if (!updated) {
+                return res.status(404).json({ success: false, message: `Property '${id}' not found` });
+            }
+            if (!updated.displayImage && Array.isArray(updated.photos) && updated.photos.length > 0) {
+                updated.displayImage = updated.photos[0];
+                await updated.save();
+            }
+            return res.json({
+                success: true,
+                message: "Property photos appended successfully",
+                data: updated
+            });
+        }
+
+        if (updateData.propertyPrice !== undefined) {
+            updateData.propertyPrice = Number(updateData.propertyPrice) || 0;
+            updateData.sortPrice = updateData.propertyPrice;
+        }
+        if (updateData.area !== undefined) {
+            updateData.area = Number(updateData.area) || undefined;
+        }
+        if (updateData.latitude !== undefined) {
+            updateData.latitude = updateData.latitude !== "" && !isNaN(Number(updateData.latitude)) ? Number(updateData.latitude) : null;
+        }
+        if (updateData.longitude !== undefined) {
+            updateData.longitude = updateData.longitude !== "" && !isNaN(Number(updateData.longitude)) ? Number(updateData.longitude) : null;
+        }
+        if (updateData.emdSubmissionDate !== undefined) {
+            updateData.emdSubmissionDate = updateData.emdSubmissionDate && !isNaN(new Date(updateData.emdSubmissionDate).getTime())
+                ? new Date(updateData.emdSubmissionDate)
+                : null;
+        }
+        if (updateData.auctionDate !== undefined) {
+            updateData.auctionDate = updateData.auctionDate && !isNaN(new Date(updateData.auctionDate).getTime())
+                ? new Date(updateData.auctionDate)
+                : null;
+        }
+        if (updateData.emdAmount !== undefined) {
+            updateData.emdAmount = updateData.emdAmount !== "" && !isNaN(Number(updateData.emdAmount))
+                ? Number(updateData.emdAmount)
+                : null;
+        }
+        for (const numField of ["bidIncrement", "bedrooms", "bathrooms", "balconies", "kitchens"]) {
+            if (updateData[numField] !== undefined) {
+                updateData[numField] = updateData[numField] !== "" && !isNaN(Number(updateData[numField]))
+                    ? Number(updateData[numField])
+                    : null;
+            }
+        }
+        if (updateData.photos !== undefined) {
+            updateData.photos = Array.isArray(updateData.photos) ? updateData.photos.filter(Boolean) : (updateData.displayImage ? [updateData.displayImage] : []);
+            if (!updateData.displayImage && updateData.photos.length > 0) {
+                updateData.displayImage = updateData.photos[0];
+            }
+        }
+        if (updateData.videos !== undefined) {
+            updateData.videos = sanitizeVideos(updateData.videos);
+        }
+        if (updateData.amenities !== undefined) {
+            updateData.amenities = Array.isArray(updateData.amenities)
+                ? updateData.amenities.map((a) => String(a || "").trim()).filter(Boolean)
+                : [];
+        }
+        if (updateData.isSold !== undefined) {
+            updateData.isSold = Boolean(updateData.isSold);
+        }
+        updateData.lastSeenAt = new Date();
 
         const updated = await Property.findOneAndUpdate(
             { $or: conditions },
@@ -1184,23 +1787,79 @@ app.patch("/api/properties/:id/status", async (req, res) => {
             return res.status(404).json({ success: false, message: `Property '${id}' not found` });
         }
 
-        const newStatus = isActive !== undefined ? Boolean(isActive) : !property.isActive;
+        const newStatus = property.isSold
+            ? true
+            : isActive !== undefined
+            ? Boolean(isActive)
+            : !property.isActive;
         property.isActive = newStatus;
+        if (newStatus) {
+            property.isSold = false;
+        }
         await property.save();
 
         await recordAudit("Toggled Listing Visibility", "property", id, property.propertyHeading || property.propertyTitle, {
-            newStatus: newStatus ? "Active" : "Inactive"
+            newStatus: newStatus ? "Active" : "Inactive",
+            isSold: property.isSold
         });
 
         res.json({
             success: true,
-            message: `Property is now ${newStatus ? "Active" : "Inactive"}`,
+            message: `Property is now ${newStatus ? "Active (Available)" : "Inactive"}`,
             isActive: newStatus,
+            isSold: property.isSold,
             data: property
         });
     } catch (error) {
         console.error("PATCH /api/properties/:id/status error:", error);
         res.status(500).json({ success: false, message: "Failed to update property status", error: error.message });
+    }
+});
+
+// PATCH /api/properties/:id/sold
+app.patch("/api/properties/:id/sold", async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { isSold } = req.body;
+
+        const conditions = [
+            { sourcePropertyId: id },
+            { propertyUniqueId: id }
+        ];
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            conditions.push({ _id: id });
+        }
+
+        const property = await Property.findOne({ $or: conditions });
+        if (!property) {
+            return res.status(404).json({ success: false, message: `Property '${id}' not found` });
+        }
+
+        const nextSold = isSold !== undefined ? Boolean(isSold) : !property.isSold;
+        property.isSold = nextSold;
+        if (!nextSold) {
+            property.isActive = true;
+        }
+        await property.save();
+
+        await recordAudit(
+            nextSold ? "Marked Property as SOLD" : "Marked Property as Active (Available)",
+            "property",
+            id,
+            property.propertyHeading || property.propertyTitle,
+            { isSold: nextSold, isActive: property.isActive }
+        );
+
+        res.json({
+            success: true,
+            message: nextSold ? "Property stamped as SOLD OUT" : "Property is now Active (Available)",
+            isSold: nextSold,
+            isActive: property.isActive,
+            data: property
+        });
+    } catch (error) {
+        console.error("PATCH /api/properties/:id/sold error:", error);
+        res.status(500).json({ success: false, message: "Failed to update sold status", error: error.message });
     }
 });
 
@@ -1250,13 +1909,21 @@ app.post("/api/properties/bulk-action", async (req, res) => {
         };
 
         if (action === "activate") {
-            const result = await Property.updateMany(query, { $set: { isActive: true } });
+            const result = await Property.updateMany(query, { $set: { isActive: true, isSold: false } });
             await recordAudit("Bulk Activate Properties", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
-            return res.json({ success: true, message: `Activated ${result.modifiedCount} properties` });
+            return res.json({ success: true, message: `Activated ${result.modifiedCount} properties (marked Available)` });
         } else if (action === "deactivate") {
             const result = await Property.updateMany(query, { $set: { isActive: false } });
             await recordAudit("Bulk Deactivate Properties", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
             return res.json({ success: true, message: `Deactivated ${result.modifiedCount} properties` });
+        } else if (action === "sold") {
+            const result = await Property.updateMany(query, { $set: { isSold: true } });
+            await recordAudit("Bulk Marked Properties as SOLD", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
+            return res.json({ success: true, message: `Stamped ${result.modifiedCount} properties as SOLD` });
+        } else if (action === "unsold") {
+            const result = await Property.updateMany(query, { $set: { isSold: false, isActive: true } });
+            await recordAudit("Bulk Marked Properties as Available", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
+            return res.json({ success: true, message: `Marked ${result.modifiedCount} properties as Active (Available)` });
         } else if (action === "delete") {
             const result = await Property.deleteMany(query);
             await recordAudit("Bulk Delete Properties", "property", "bulk", `${result.deletedCount} items`, { count: result.deletedCount });
@@ -1412,6 +2079,19 @@ app.get("/api/admin/banks", async (req, res) => {
             { $sort: { totalListings: -1 } }
         ]);
 
+        if (!banksAgg.some((b) => b._id && b._id.toLowerCase() === "hdfc bank")) {
+            banksAgg.push({
+                _id: "HDFC Bank",
+                totalListings: 0,
+                activeListings: 0,
+                totalValuation: 0,
+                avgPrice: 0,
+                branches: ["HDFC Bank Retail & Stressed Assets Recovery Branch, Kolkata"],
+                departments: ["SARFAESI Retail & Commercial Asset Recovery Cell"],
+                propertyTypes: ["Residential", "Commercial"]
+            });
+        }
+
         res.json({
             success: true,
             count: banksAgg.length,
@@ -1535,13 +2215,13 @@ app.post("/api/inquiries", async (req, res) => {
     try {
         const { name, email, phone, subject, message, propertyId, propertyTitle, bankName, cityName, propertyPrice, type, priority } = req.body;
 
-        if (!name || !email) {
-            return res.status(400).json({ success: false, message: "Name and email are required" });
+        if (!name || !String(name).trim() || (!String(email || "").trim() && !String(phone || "").trim())) {
+            return res.status(400).json({ success: false, message: "Please enter your name and a phone number or email." });
         }
 
         const inquiry = new Inquiry({
             name: name.trim(),
-            email: email.trim(),
+            email: email ? email.trim() : "",
             phone: phone ? phone.trim() : "",
             subject: subject ? subject.trim() : "",
             message: message ? message.trim() : "Interested in bank auction property.",
@@ -1801,6 +2481,122 @@ app.get("/api/admin/export", async (req, res) => {
         res.status(500).json({ success: false, message: "Export failed", error: error.message });
     }
 });
+
+// ===============================
+// AI Assistant (POST /api/chat) — see chat.js
+// ===============================
+
+// Visitor Sign-In & Lead Capture Endpoint (unlocks property browsing & saves buyer info to Leads CRM)
+app.post("/api/auth/visitor-login", async (req, res) => {
+    try {
+        const { name, phone, email, city, preference, budget, mode } = req.body || {};
+        const cleanPhone = String(phone || "").trim();
+        const cleanEmail = String(email || "").trim();
+        const cleanName = String(name || "").trim();
+        const cleanCity = String(city || "").trim();
+        const cleanPreference = String(preference || "Both Fresh & Auction Properties").trim();
+        const cleanBudget = String(budget || "").trim();
+
+        if (!cleanPhone && !cleanEmail) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter your mobile number or email address to sign in."
+            });
+        }
+
+        if (mode !== "returning" && !cleanName) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter your full name and mobile number to sign in."
+            });
+        }
+
+        const matchConditions = [];
+        if (cleanPhone) matchConditions.push({ phone: cleanPhone });
+        if (cleanEmail) matchConditions.push({ email: new RegExp(`^${escapeRegex(cleanEmail)}$`, "i") });
+
+        let existingLead = matchConditions.length > 0
+            ? await Inquiry.findOne({ $or: matchConditions }).sort({ createdAt: -1 })
+            : null;
+
+        const resolvedName = cleanName || existingLead?.name || (cleanEmail ? cleanEmail.split("@")[0] : `Visitor (${cleanPhone.slice(-4)})`);
+        const summaryParts = [
+            `Visitor signed in to unlock property listings.`,
+            cleanPreference ? `Interested In: ${cleanPreference}` : "",
+            cleanBudget ? `Budget: ${cleanBudget}` : "",
+            cleanCity ? `Preferred City: ${cleanCity}` : ""
+        ].filter(Boolean);
+
+        let savedLead;
+        if (existingLead) {
+            if (cleanName) existingLead.name = cleanName;
+            if (cleanPhone) existingLead.phone = cleanPhone;
+            if (cleanEmail) existingLead.email = cleanEmail;
+            if (cleanCity) existingLead.cityName = cleanCity;
+            existingLead.notes.push({
+                text: `Visitor signed in on website.${cleanPreference ? ` Preference: ${cleanPreference}.` : ""}${cleanBudget ? ` Budget: ${cleanBudget}.` : ""}`,
+                author: "Website Login Gate",
+                createdAt: new Date()
+            });
+            savedLead = await existingLead.save();
+        } else {
+            const newLead = new Inquiry({
+                name: resolvedName,
+                phone: cleanPhone,
+                email: cleanEmail,
+                cityName: cleanCity,
+                type: "visitor_login",
+                subject: "Website Visitor Sign-In Lead",
+                propertyTitle: `Visitor Sign-In • ${cleanPreference}${cleanCity ? ` (${cleanCity})` : ""}`,
+                message: summaryParts.join(" | "),
+                priority: "high",
+                status: "new",
+                stage: "new",
+                leadScore: 85
+            });
+            savedLead = await newLead.save();
+        }
+
+        await recordAudit(
+            "Visitor Signed In (Lead Captured)",
+            "lead",
+            savedLead._id.toString(),
+            resolvedName,
+            {
+                phone: cleanPhone,
+                email: cleanEmail,
+                city: cleanCity,
+                preference: cleanPreference,
+                budget: cleanBudget
+            },
+            resolvedName
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Signed in! All properties are now unlocked.",
+            data: {
+                id: savedLead._id.toString(),
+                name: savedLead.name,
+                phone: savedLead.phone || cleanPhone,
+                email: savedLead.email || cleanEmail,
+                city: savedLead.cityName || cleanCity,
+                preference: cleanPreference,
+                budget: cleanBudget,
+                signedInAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error("POST /api/auth/visitor-login error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to sign in right now. Please try again.",
+            error: error.message
+        });
+    }
+});
+
+require("./chat")(app, { Property, mongoose });
 
 // ===============================
 // Start Server

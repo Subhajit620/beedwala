@@ -5,11 +5,10 @@ import {
     Mail,
     Eye,
     EyeOff,
-    Sparkles,
     ArrowRight,
     AlertCircle,
-    Shield,
-    CheckCircle2
+    CheckCircle2,
+    KeyRound
 } from "lucide-react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import logoImg from "../../assets/logo.jpg";
@@ -41,7 +40,7 @@ export default function AdminLogin() {
             await login(email, password);
             navigate(from, { replace: true });
         } catch (err) {
-            setError(err.message || "Invalid credentials. Please click the 1-Click Login button below.");
+            setError(err.message || "Invalid credentials. Use the Quick Sign In button below.");
         } finally {
             setLoading(false);
         }
@@ -59,7 +58,7 @@ export default function AdminLogin() {
                 await login("admin@bidwallah.com", "admin123");
                 navigate(from, { replace: true });
             } catch (err) {
-                setError(err.message || "Instant access failed.");
+                setError(err.message || "Sign in failed.");
             }
         } finally {
             setLoading(false);
@@ -67,93 +66,89 @@ export default function AdminLogin() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-12 text-slate-100 relative overflow-hidden font-sans">
-            {/* Ambient Background Glows */}
-            <div className="absolute top-1/4 -left-20 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl pointer-events-none"></div>
-            <div className="absolute bottom-1/4 -right-20 h-80 w-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none"></div>
-
-            <div className="w-full max-w-md space-y-6 relative z-10 animate-scale-up">
+        <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] px-4 py-12 text-gray-800 font-sans">
+            <div className="w-full max-w-md space-y-6">
                 {/* Brand Header */}
                 <div className="text-center space-y-2">
-                    <div className="inline-flex items-center justify-center p-2.5 rounded-2xl bg-white shadow-xl shadow-amber-500/10 mb-1">
-                        <img src={logoImg} alt="Baanknet Logo" className="h-8 w-auto object-contain" />
+                    <div className="inline-flex items-center justify-center p-2.5 rounded-xl bg-white border border-gray-200 shadow-xs mb-1">
+                        <img src={logoImg} alt="Bidwallah Logo" className="h-8 w-auto object-contain" />
                     </div>
 
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
                         Admin Sign In
                     </h1>
-                    <p className="text-xs text-slate-400">
-                        Baanknet SARFAESI Auction Management Console
+                    <p className="text-xs text-gray-500">
+                        Bidwallah Property &amp; Auction Management Console
                     </p>
                 </div>
 
                 {/* Login Box */}
-                <div className="rounded-3xl border border-slate-800 bg-slate-900/95 p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-5">
+                <div className="rounded-2xl border border-gray-200/80 bg-white/60 backdrop-blur-xl p-6 sm:p-8 shadow-sm space-y-5">
                     {/* Error Banner */}
                     {error && (
-                        <div className="flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-300">
-                            <AlertCircle size={16} className="text-rose-400 shrink-0" />
+                        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 font-medium">
+                            <AlertCircle size={16} className="text-red-500 shrink-0" />
                             <span>{error}</span>
                         </div>
                     )}
 
-                    {/* ⚡ 1-Click Instant Login (Super Simple) */}
+                    {/* Quick Sign In */}
                     <button
                         type="button"
                         onClick={handleInstantLogin}
                         disabled={loading}
-                        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 px-4 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 py-3 px-4 text-xs font-semibold text-white shadow-xs transition cursor-pointer disabled:opacity-50"
                     >
-                        <Sparkles size={16} />
-                        <span>{loading ? "Signing in..." : "⚡ 1-Click Instant Admin Login"}</span>
+                        <KeyRound size={15} />
+                        <span>{loading ? "Signing in..." : "Quick Admin Sign In"}</span>
                         <ArrowRight size={14} />
                     </button>
 
                     <div className="relative flex py-1 items-center">
-                        <div className="flex-grow border-t border-slate-800"></div>
-                        <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        <div className="flex-grow border-t border-gray-200"></div>
+                        <span className="flex-shrink mx-3 text-[11px] font-medium text-gray-400">
                             Or sign in with email
                         </span>
-                        <div className="flex-grow border-t border-slate-800"></div>
+                        <div className="flex-grow border-t border-gray-200"></div>
                     </div>
 
-                    {/* Simple Clean Form */}
+                    {/* Credentials Form */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-300 mb-1">
+                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                 Email Address
                             </label>
-                            <div className="flex items-center rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 focus-within:border-amber-500 transition">
-                                <Mail size={16} className="text-slate-500 mr-2 shrink-0" />
+                            <div className="flex items-center rounded-lg bg-gray-50 border border-gray-200 px-3.5 py-2.5 focus-within:border-red-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-red-500/10 transition">
+                                <Mail size={15} className="text-gray-400 mr-2.5 shrink-0" />
                                 <input
                                     type="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="admin@bidwallah.com"
-                                    className="w-full bg-transparent text-xs font-semibold text-white placeholder-slate-600 outline-none"
+                                    className="w-full bg-transparent text-xs font-medium text-gray-900 placeholder-gray-400 outline-none"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-300 mb-1">
+                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                 Password
                             </label>
-                            <div className="flex items-center rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 focus-within:border-amber-500 transition">
-                                <Lock size={16} className="text-slate-500 mr-2 shrink-0" />
+                            <div className="flex items-center rounded-lg bg-gray-50 border border-gray-200 px-3.5 py-2.5 focus-within:border-red-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-red-500/10 transition">
+                                <Lock size={15} className="text-gray-400 mr-2.5 shrink-0" />
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-transparent text-xs font-semibold text-white placeholder-slate-600 outline-none"
+                                    className="w-full bg-transparent text-xs font-medium text-gray-900 placeholder-gray-400 outline-none"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="text-slate-500 hover:text-slate-300 cursor-pointer ml-2"
+                                    className="text-gray-400 hover:text-gray-600 cursor-pointer ml-2"
                                 >
                                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                                 </button>
@@ -163,7 +158,7 @@ export default function AdminLogin() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full rounded-xl bg-slate-800 hover:bg-slate-700 text-white py-2.5 px-4 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                            className="w-full rounded-lg border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2.5 px-4 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
                         >
                             {loading ? "Authenticating..." : "Sign In with Credentials"}
                         </button>
@@ -171,9 +166,9 @@ export default function AdminLogin() {
 
                     {/* Pre-filled Account Notice */}
                     <div className="text-center pt-1">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-                            <CheckCircle2 size={12} />
-                            <span>Demo credentials pre-filled & ready</span>
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-red-700 font-medium bg-red-50 border border-red-200/80 px-3 py-1 rounded-full">
+                            <CheckCircle2 size={12} className="text-red-600" />
+                            <span>Default workspace credentials pre-filled</span>
                         </span>
                     </div>
                 </div>
@@ -182,7 +177,7 @@ export default function AdminLogin() {
                 <div className="text-center">
                     <Link
                         to="/"
-                        className="text-xs text-slate-400 hover:text-amber-400 transition font-medium"
+                        className="text-xs text-slate-500 hover:text-blue-600 transition font-medium"
                     >
                         ← Back to Public Marketplace
                     </Link>

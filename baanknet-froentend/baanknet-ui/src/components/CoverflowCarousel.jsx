@@ -4,20 +4,16 @@ import {
     ChevronLeft,
     ChevronRight,
     MapPin,
-    Building2,
     Landmark,
     TrendingDown,
-    Flame,
     ShieldCheck,
     ArrowRight,
-    Sparkles,
     Ruler,
-    Calendar,
     Pause,
     Play
 } from "lucide-react";
 
-export const DEFAULT_COVERFLOW_PROPERTIES = [
+const DEFAULT_COVERFLOW_PROPERTIES = [
     {
         id: "cf-1",
         title: "3 BHK Luxury Flat in Salt Lake",
@@ -241,8 +237,6 @@ export default function CoverflowCarousel({ items = DEFAULT_COVERFLOW_PROPERTIES
             return () => container.removeEventListener("keydown", handleKeyDown);
         }
     }, [prevSlide, nextSlide]);
-
-    const activeItem = items[activeIndex];
 
     // Normalized drag shift between -0.6 and +0.6 for responsive real-time follower motion
     const dragShift = isDragging ? Math.max(-0.6, Math.min(0.6, dragDistance / 240)) : 0;

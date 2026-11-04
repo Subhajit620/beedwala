@@ -5,13 +5,7 @@ import {
     Download,
     ExternalLink,
     AlertTriangle,
-    CheckCircle2,
-    ShieldAlert,
-    HelpCircle,
-    ChevronRight,
-    IndianRupee,
-    FileSpreadsheet,
-    Eye
+    ShieldAlert
 } from "lucide-react";
 import {
     getAuctionSchedule,
@@ -20,44 +14,45 @@ import {
 } from "../utils/auctionScheduler";
 import { formatINR } from "../utils/formatters";
 
+const PASSED = { days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true };
+
+// Remaining time until the auction (pure helper — "now" is passed in)
+function computeTimeLeft(schedule, now) {
+    if (!schedule) return PASSED;
+    const diff = schedule.auctionDate.getTime() - now;
+    if (diff <= 0) return PASSED;
+    return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+        isPassed: false
+    };
+}
+
 export default function AuctionCountdown({ property, variant = "full" }) {
     const schedule = useMemo(() => getAuctionSchedule(property), [property]);
 
     // Live ticker calculation
-    const [timeLeft, setTimeLeft] = useState(() => {
-        if (!schedule) return { days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true };
-        const diff = schedule.auctionDate.getTime() - Date.now();
-        if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true };
+    const [timeLeft, setTimeLeft] = useState(() => computeTimeLeft(schedule, Date.now()));
 
-        return {
-            days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-            hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-            minutes: Math.floor((diff / 1000 / 60) % 60),
-            seconds: Math.floor((diff / 1000) % 60),
-            isPassed: false
-        };
-    });
-
+    // Tick every second for the current schedule. The first tick runs immediately, so switching
+    // to another property never shows the previous property's countdown. Stops once the time has passed.
     useEffect(() => {
-        if (!schedule || timeLeft.isPassed) return;
+        if (!schedule) return;
+        let interval;
+        const tick = () => {
+            const next = computeTimeLeft(schedule, Date.now());
+            setTimeLeft(next);
+            if (next.isPassed) clearInterval(interval);
+        };
+        const first = setTimeout(tick, 0);
+        interval = setInterval(tick, 1000);
 
-        const interval = setInterval(() => {
-            const diff = schedule.auctionDate.getTime() - Date.now();
-            if (diff <= 0) {
-                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true });
-                clearInterval(interval);
-            } else {
-                setTimeLeft({
-                    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-                    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-                    minutes: Math.floor((diff / 1000 / 60) % 60),
-                    seconds: Math.floor((diff / 1000) % 60),
-                    isPassed: false
-                });
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
+        return () => {
+            clearTimeout(first);
+            clearInterval(interval);
+        };
     }, [schedule]);
 
     if (!property || !schedule) return null;
@@ -72,10 +67,10 @@ export default function AuctionCountdown({ property, variant = "full" }) {
                 <div className="flex items-center justify-between mb-2">
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
                         <Clock size={12} className="text-amber-600 animate-pulse" />
-                        <span>E-Auction Bidding</span>
+                        <span>Auction: {schedule.auctionDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                     </span>
                     <span className="text-[11px] font-bold text-slate-700">
-                        {schedule.auctionDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        {schedule.auctionTime}
                     </span>
                 </div>
 
@@ -96,6 +91,24 @@ export default function AuctionCountdown({ property, variant = "full" }) {
                         <div className="text-sm font-black text-amber-400">{timeLeft.seconds}</div>
                         <div className="text-[9px] uppercase tracking-wider text-slate-400">Sec</div>
                     </div>
+                </div>
+
+                <div className="mt-2.5 pt-2.5 border-t border-amber-200/70 flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-rose-700 flex items-center gap-1">
+                        <Calendar size={12} className="text-rose-600" />
+                        <span>
+                            EMD Last Date:{" "}
+                            {schedule.emdSubmissionDate.toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric"
+                            })}{" "}
+                            ({schedule.emdSubmissionTime})
+                        </span>
+                    </span>
+                    <span className="font-extrabold text-slate-900">
+                        EMD: {formatINR(schedule.emdAmount)}
+                    </span>
                 </div>
             </div>
         );
@@ -175,45 +188,45 @@ export default function AuctionCountdown({ property, variant = "full" }) {
             <div className="p-5 sm:p-6 bg-slate-50/50 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-2xs">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                        10% EMD Amount Required
+                        EMD Amount &amp; Bid Increment
                     </span>
                     <span className="text-lg sm:text-xl font-black text-slate-900 block">
                         {formatINR(schedule.emdAmount)}
                     </span>
                     <span className="text-[10px] text-amber-700 font-semibold mt-0.5 block">
-                        Refundable for non-winning bidders
+                        Bid Increment: {formatINR(schedule.bidIncrement)} • Refundable EMD
                     </span>
                 </div>
 
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-2xs">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                        EMD Submission Deadline
+                        EMD Submission Last Date
                     </span>
                     <span className="text-sm sm:text-base font-bold text-slate-900 block">
                         {schedule.emdSubmissionDate.toLocaleDateString("en-IN", {
                             day: "numeric",
-                            month: "short",
+                            month: "long",
                             year: "numeric"
                         })}
                     </span>
                     <span className="text-[10px] text-rose-600 font-bold mt-0.5 block">
-                        Strictly before 5:00 PM IST
+                        Strictly before {schedule.emdSubmissionTime}
                     </span>
                 </div>
 
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-2xs">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                        Live E-Auction Date
+                        Auction Date &amp; Time
                     </span>
                     <span className="text-sm sm:text-base font-bold text-slate-900 block">
                         {schedule.auctionDate.toLocaleDateString("en-IN", {
                             day: "numeric",
-                            month: "short",
+                            month: "long",
                             year: "numeric"
                         })}
                     </span>
                     <span className="text-[10px] text-emerald-700 font-bold mt-0.5 block">
-                        11:00 AM – 1:00 PM IST
+                        Auction Time: {schedule.auctionTime}
                     </span>
                 </div>
             </div>

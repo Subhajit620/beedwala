@@ -37,7 +37,7 @@ export default function CompareModal() {
                         <div className="hidden xs:flex items-center gap-1.5 pl-1 sm:pl-2 shrink-0">
                             {comparedProperties.map((p) => {
                                 const id = p.sourcePropertyId || p._id;
-                                const photo = p.photos && p.photos.length > 0 ? p.photos[0] : null;
+                                const photo = p.displayImage || (p.photos && p.photos.length > 0 ? p.photos[0] : null);
                                 return (
                                     <div
                                         key={id}
@@ -139,7 +139,7 @@ export default function CompareModal() {
                                             {comparedProperties.map((p) => {
                                                 const id = p.sourcePropertyId || p._id;
                                                 const title = getCleanPropertyTitle(p);
-                                                const photo = p.photos && p.photos.length > 0 ? p.photos[0] : null;
+                                                const photo = p.displayImage || (p.photos && p.photos.length > 0 ? p.photos[0] : null);
                                                 return (
                                                     <td key={id} className="p-3 w-64 align-top">
                                                         <div className="space-y-2">

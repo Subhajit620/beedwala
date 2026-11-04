@@ -1,57 +1,63 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
     Menu,
     X,
     Bookmark,
     Scale,
-    Sparkles,
-    ShieldCheck,
     Search,
-    Building2,
-    Landmark,
-    MapPin,
     ArrowRight,
-    Shield
+    Shield,
+    ChevronDown,
+    User, LogOut, Lock
 } from "lucide-react";
+import { VerifiedSealIcon, PropertyFinderIcon } from "./BrandIcons";
 import { useApp } from "../context/AppContext";
 import { fetchProperties } from "../services/propertyService";
-import { formatINR } from "../utils/formatters";
 import logoImg from "../assets/logo.jpg";
 
 export default function Navbar() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const handleOpenBuyerGuide = () => {
+        setMobileMenuOpen(false);
+        if (location.pathname === "/") {
+            window.dispatchEvent(new CustomEvent("bw:open-welcome-modal"));
+        } else {
+            navigate("/?guide=1");
+        }
+    };
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
-    const [searchLoading, setSearchLoading] = useState(false);
     const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
     const searchRef = useRef(null);
+    // Results are only shown for queries of 2+ characters (derived — no state reset needed)
+    const searchQueryReady = searchQuery.trim().length >= 2;
 
     const {
         savedProperties,
         setIsWatchlistOpen,
         comparedProperties,
-        setIsCompareModalOpen
+        setIsCompareModalOpen, visitorUser, openVisitorLogin, logoutVisitor, visitorCountdown
     } = useApp();
 
     const navItems = [
         { name: "Home", path: "/" },
-        { name: "Properties", path: "/properties" },
+        { name: "Property", children: [
+            { name: "Fresh Property", path: "/fresh-properties" },
+            { name: "Auction Property", path: "/properties" }
+        ] },
         { name: "About", path: "/about" },
         { name: "Contact", path: "/contact" }
     ];
 
     // Live search debouncing
     useEffect(() => {
-        if (!searchQuery.trim() || searchQuery.trim().length < 2) {
-            setSearchResults([]);
-            setSearchDropdownOpen(false);
-            return;
-        }
+        if (!searchQueryReady || !visitorUser) return;
 
         const timeout = setTimeout(async () => {
-            setSearchLoading(true);
             try {
                 const res = await fetchProperties({
                     search: searchQuery.trim(),
@@ -63,13 +69,11 @@ export default function Navbar() {
                 }
             } catch (err) {
                 console.error("Navbar search error:", err);
-            } finally {
-                setSearchLoading(false);
             }
         }, 220);
 
         return () => clearTimeout(timeout);
-    }, [searchQuery]);
+    }, [searchQuery, searchQueryReady, visitorUser]);
 
     // Close search dropdown on outside click
     useEffect(() => {
@@ -146,7 +150,7 @@ export default function Navbar() {
                         </form>
 
                         {/* Live Search Results Dropdown */}
-                        {searchDropdownOpen && searchResults.length > 0 && (
+                        {searchDropdownOpen && searchQueryReady && searchResults.length > 0 && (
                             <div className="absolute top-12 left-0 right-0 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl z-50 animate-scale-up space-y-1">
                                 <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                                     <span>Matching Properties</span>
@@ -201,7 +205,29 @@ export default function Navbar() {
 
                     {/* Desktop Navigation Links */}
                     <nav className="hidden lg:flex items-center gap-6 shrink-0">
-                        {navItems.map((item) => (
+                        {navItems.map((item) => item.children ? (
+                            <details key={item.name} className="relative" onBlur={(event) => {
+                                if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+                            }} onKeyDown={(event) => {
+                                if (event.key === "Escape") {
+                                    event.currentTarget.open = false;
+                                    event.currentTarget.querySelector("summary").focus();
+                                }
+                            }}>
+                                <summary className="flex cursor-pointer list-none items-center gap-1 py-1.5 px-1 text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-amber-600 [&::-webkit-details-marker]:hidden">
+                                    {item.name}<ChevronDown size={14} />
+                                </summary>
+                                <div className="absolute left-0 top-full mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                                    {item.children.map((child) => (
+                                        <NavLink key={child.path} to={child.path}
+                                            onClick={(event) => { event.currentTarget.closest("details").open = false; }}
+                                            className={({ isActive }) => `block rounded-lg px-3 py-2.5 text-xs font-bold transition ${isActive ? "bg-amber-50 text-amber-700" : "text-slate-600 hover:bg-slate-50 hover:text-amber-600"}`}>
+                                            {child.name}
+                                        </NavLink>
+                                    ))}
+                                </div>
+                            </details>
+                        ) : (
                             <NavLink
                                 key={item.path}
                                 to={item.path}
@@ -259,12 +285,46 @@ export default function Navbar() {
                             <Shield size={16} className="text-slate-600 hover:text-amber-600" />
                         </Link>
 
+                        {/* Buyer Quick Guide Popup Trigger */}
+                        <button
+                            type="button"
+                            onClick={handleOpenBuyerGuide}
+                            className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900 transition shadow-xs cursor-pointer active:scale-95"
+                            title="Open Smart Property Finder & Buyer Guide"
+                        >
+                            <PropertyFinderIcon size={14} className="text-amber-700" />
+                            <span>Quick Guide</span>
+                        </button>
+
+                        {visitorUser ? (
+                            <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-900">
+                                <User size={14} className="text-emerald-600" />
+                                <span className="max-w-[110px] truncate">{visitorUser.name}</span>
+                                <button
+                                    type="button"
+                                    onClick={logoutVisitor}
+                                    title="Sign out"
+                                    className="ml-1 rounded-md p-1 text-slate-400 hover:bg-emerald-100 hover:text-rose-600 transition cursor-pointer"
+                                >
+                                    <LogOut size={13} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => openVisitorLogin(false)}
+                                className="hidden md:inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-2 text-xs font-black text-slate-950 shadow-xs transition cursor-pointer active:scale-95"
+                            >
+                                <Lock size={13} />
+                                <span>Sign In{visitorCountdown > 0 ? ` (${visitorCountdown}s)` : ""}</span>
+                            </button>
+                        )}
                         {/* Explore CTA Button (Desktop) */}
                         <Link
                             to="/properties"
                             className="hidden md:inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-slate-950 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-bold text-amber-400 hover:bg-slate-900 transition shadow-xs border border-slate-800 active:scale-95"
                         >
-                            <Sparkles size={14} className="text-amber-400" />
+                            <VerifiedSealIcon size={14} className="text-amber-400" />
                             <span>Explore</span>
                         </Link>
                     </div>
@@ -322,7 +382,21 @@ export default function Navbar() {
                     </form>
 
                     <nav className="flex flex-col gap-1.5">
-                        {navItems.map((item) => (
+                        {navItems.map((item) => item.children ? (
+                            <details key={item.name} className="rounded-xl">
+                                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 [&::-webkit-details-marker]:hidden">
+                                    {item.name}<ChevronDown size={16} />
+                                </summary>
+                                <div className="ml-4 space-y-1 border-l border-amber-200 pl-2">
+                                    {item.children.map((child) => (
+                                        <NavLink key={child.path} to={child.path} onClick={() => setMobileMenuOpen(false)}
+                                            className={({ isActive }) => `block rounded-xl px-4 py-2.5 text-xs font-bold ${isActive ? "bg-amber-50 text-amber-700" : "text-slate-700 hover:bg-slate-50"}`}>
+                                            {child.name}
+                                        </NavLink>
+                                    ))}
+                                </div>
+                            </details>
+                        ) : (
                             <NavLink
                                 key={item.path}
                                 to={item.path}

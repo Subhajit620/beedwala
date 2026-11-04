@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Bot, Building2, MapPin, MessageCircle, RotateCcw, Send, Sparkles, X } from "lucide-react";
+import { Building2, MapPin, MessageCircle, RotateCcw, Send, X } from "lucide-react";
 import { fetchChatStatus, sendChatMessage } from "../services/chatService";
+import { AdvisoryDeskIcon } from "./BrandIcons";
 
 const STORAGE_KEY = "bw_chat_history_v1";
 const MAX_STORED = 30;
@@ -25,7 +26,7 @@ const PROPERTY_SUGGESTIONS = [
 const WELCOME = {
     role: "assistant",
     text:
-        "Hi! I'm the **Bidwallah Assistant** 👋\n\nI can help you:\n- Find bank auction properties by city, budget, type or bank\n- Explain any property, its EMD and auction dates\n- Understand the auction process, SARFAESI and possession types\n\nWhat are you looking for today?"
+        "Welcome to the **Bidwallah Advisory Desk**.\n\nI can help you:\n- Find bank auction properties by city, budget, type or bank\n- Explain any property, its EMD and auction dates\n- Understand the auction process, SARFAESI and possession types\n\nWhat are you looking for today?"
 };
 
 // ---------- Tiny safe markdown renderer (bold + bullet / numbered lists) ----------
@@ -215,30 +216,30 @@ export default function ChatAssistant() {
                 >
                     <span className="relative flex h-6 w-6 items-center justify-center">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/30" />
-                        <Sparkles size={18} className="relative" />
+                        <AdvisoryDeskIcon size={18} className="relative" />
                     </span>
-                    <span className="text-xs font-bold hidden sm:inline">Ask AI Assistant</span>
+                    <span className="text-xs font-bold hidden sm:inline">Property Desk</span>
                 </button>
             )}
 
             {open && (
                 <div
                     role="dialog"
-                    aria-label="Bidwallah AI assistant"
+                    aria-label="Bidwallah Property Advisory Desk"
                     className="fixed z-[60] inset-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[min(640px,calc(100vh-3rem))] sm:w-[400px] flex flex-col bg-slate-50 sm:rounded-3xl shadow-2xl shadow-slate-900/30 ring-1 ring-slate-200 overflow-hidden"
                 >
                     {/* Header */}
                     <div className="flex items-center gap-3 bg-slate-950 px-4 py-3 text-white">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 ring-1 ring-amber-500/40">
-                            <Bot size={19} className="text-amber-400" />
+                            <AdvisoryDeskIcon size={19} className="text-amber-400" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-black leading-tight">
-                                Bidwallah <span className="text-amber-400">Assistant</span>
+                                Bidwallah <span className="text-amber-400">Advisory Desk</span>
                             </p>
                             <p className="flex items-center gap-1.5 text-[10.5px] text-slate-400">
                                 <span className={`h-1.5 w-1.5 rounded-full ${disabled ? "bg-rose-500" : "bg-emerald-400"}`} />
-                                {disabled ? (status.offline ? "Offline" : "Not configured") : "AI • Live property data"}
+                                {disabled ? (status.offline ? "Offline" : "Not configured") : "Live property inventory"}
                             </p>
                         </div>
                         <button

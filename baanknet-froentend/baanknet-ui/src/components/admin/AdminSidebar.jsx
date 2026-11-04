@@ -3,22 +3,19 @@ import { NavLink, Link } from "react-router-dom";
 import {
     LayoutDashboard,
     Building2,
-    PlusCircle,
+    Building,
+    Plus,
     Mail,
     RefreshCw,
     BarChart3,
     Settings,
     LogOut,
     ExternalLink,
-    Shield,
-    Sparkles,
-    ChevronRight,
     Landmark,
     CopyCheck,
     History,
     PanelLeftClose,
     PanelLeftOpen,
-    GripVertical,
     X
 } from "lucide-react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
@@ -28,7 +25,7 @@ export default function AdminSidebar({
     mobileOpen,
     onCloseMobile,
     newInquiriesCount = 0,
-    width = 288,
+    width = 256,
     isCollapsed = false,
     onToggleCollapse,
     isResizing = false,
@@ -37,46 +34,45 @@ export default function AdminSidebar({
 }) {
     const { adminUser, logout } = useAdminAuth();
 
-    // On mobile drawer, always render expanded even if desktop rail is collapsed
     const compact = isCollapsed && !mobileOpen;
 
     const navSections = [
         {
-            title: "DAILY OPERATIONS",
+            title: "Workspace",
             items: [
                 {
-                    name: "Dashboard",
+                    name: "Overview",
                     path: "/admin",
                     end: true,
                     icon: LayoutDashboard
                 },
                 {
-                    name: "Buyer Leads & Inquiries",
+                    name: "Buyer Inquiries",
                     path: "/admin/inquiries",
                     icon: Mail,
-                    badge: newInquiriesCount > 0 ? `${newInquiriesCount} New` : null,
-                    badgeCount: newInquiriesCount,
-                    badgeClass: "bg-rose-500 text-white"
+                    badge: newInquiriesCount > 0 ? String(newInquiriesCount) : null,
+                    badgeCount: newInquiriesCount
                 },
                 {
-                    name: "Fresh Properties (Direct)",
+                    name: "Direct Listings",
                     path: "/admin/fresh-properties",
-                    icon: Sparkles
+                    icon: Building
                 },
                 {
-                    name: "Bank Auction Properties",
+                    name: "Auction Directory",
                     path: "/admin/properties",
+                    end: true,
                     icon: Building2
                 },
                 {
-                    name: "Add Auction Property",
+                    name: "New Property",
                     path: "/admin/properties/new",
-                    icon: PlusCircle
+                    icon: Plus
                 }
             ]
         },
         {
-            title: "TOOLS & ANALYTICS",
+            title: "Operations",
             items: [
                 {
                     name: "Partner Banks",
@@ -84,27 +80,27 @@ export default function AdminSidebar({
                     icon: Landmark
                 },
                 {
-                    name: "Crawler & Sync",
+                    name: "Crawler Sync",
                     path: "/admin/sync",
                     icon: RefreshCw
                 },
                 {
-                    name: "Market Analytics",
+                    name: "Market Reports",
                     path: "/admin/analytics",
                     icon: BarChart3
                 },
                 {
-                    name: "Clean Duplicates",
+                    name: "Deduplication",
                     path: "/admin/duplicates",
                     icon: CopyCheck
                 },
                 {
-                    name: "Audit Trail",
+                    name: "Audit Log",
                     path: "/admin/audit-logs",
                     icon: History
                 },
                 {
-                    name: "System Settings",
+                    name: "Settings",
                     path: "/admin/settings",
                     icon: Settings
                 }
@@ -114,72 +110,66 @@ export default function AdminSidebar({
 
     return (
         <>
-            {/* Mobile Backdrop */}
             {mobileOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-xs lg:hidden transition-opacity"
+                    className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-xs lg:hidden transition-opacity"
                     onClick={onCloseMobile}
                 />
             )}
 
-            {/* Sidebar Container */}
             <aside
                 style={{ "--sidebar-w": `${width}px` }}
-                className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 lg:w-[var(--sidebar-w)] flex-col bg-slate-950 border-r border-slate-800 text-slate-300 lg:translate-x-0 ${
+                className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 lg:w-[var(--sidebar-w)] flex-col bg-gray-100/75 backdrop-blur-xl border-r border-gray-200/80 text-gray-600 lg:translate-x-0 ${
                     isResizing ? "" : "transition-[width,transform] duration-200 ease-out"
-                } ${mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+                } ${mobileOpen ? "translate-x-0 shadow-xl" : "-translate-x-full"}`}
             >
-                {/* Brand & Portal Header */}
+                {/* Brand Header */}
                 <div
-                    className={`flex h-20 items-center border-b border-slate-800/80 bg-slate-950/80 ${
-                        compact ? "justify-center px-2" : "justify-between px-4 sm:px-5"
+                    className={`flex h-14 items-center border-b border-gray-200/80 bg-white/60 ${
+                        compact ? "justify-center px-2" : "justify-between px-4"
                     }`}
                 >
                     <Link
                         to="/admin"
-                        title="Bidwallah Admin Panel"
-                        className={`flex items-center gap-3 min-w-0 group ${compact ? "justify-center" : ""}`}
+                        title="Bidwallah Backoffice"
+                        className={`flex items-center gap-2.5 min-w-0 ${compact ? "justify-center" : ""}`}
                     >
-                        <div className="shrink-0 rounded-xl bg-white p-1.5 shadow-md group-hover:scale-105 transition">
-                            <img src={logoImg} alt="Bidwallah Logo" className="h-7 w-auto object-contain" />
+                        <div className="shrink-0 rounded-md border border-gray-200 bg-white p-1 shadow-2xs">
+                            <img src={logoImg} alt="Bidwallah" className="h-5 w-auto object-contain" />
                         </div>
                         {!compact && (
-                            <div className="min-w-0">
-                                <span className="block truncate text-xs font-black tracking-wider text-white uppercase">
+                            <div className="flex items-baseline gap-1.5 min-w-0">
+                                <span className="truncate text-sm font-bold tracking-tight text-gray-900">
                                     Bidwallah
                                 </span>
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
-                                    <Shield size={10} />
-                                    <span className="truncate">ADMIN PANEL</span>
+                                <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                    Admin
                                 </span>
                             </div>
                         )}
                     </Link>
 
-                    {/* Desktop Collapse / Expand Toggle Button */}
                     {!compact && (
                         <button
                             type="button"
                             onClick={onToggleCollapse}
-                            title="Collapse sidebar (or drag right edge to resize)"
-                            className="hidden lg:inline-flex rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-amber-400 transition cursor-pointer shrink-0"
+                            title="Collapse sidebar"
+                            className="hidden lg:inline-flex rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition cursor-pointer shrink-0"
                             aria-label="Collapse sidebar"
                         >
-                            <PanelLeftClose size={17} />
+                            <PanelLeftClose size={15} />
                         </button>
                     )}
 
-                    {/* Mobile Close Button */}
                     <button
                         onClick={onCloseMobile}
-                        className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden cursor-pointer shrink-0"
+                        className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 lg:hidden cursor-pointer shrink-0"
                         aria-label="Close menu"
                     >
-                        <X size={18} />
+                        <X size={16} />
                     </button>
                 </div>
 
-                {/* Expand Button when in Compact Rail Mode */}
                 {compact && (
                     <div className="hidden lg:flex justify-center pt-3 px-2">
                         <button
@@ -187,25 +177,25 @@ export default function AdminSidebar({
                             onClick={onToggleCollapse}
                             title="Expand sidebar"
                             aria-label="Expand sidebar"
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-amber-400 hover:bg-slate-800 transition cursor-pointer"
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
                         >
-                            <PanelLeftOpen size={16} />
+                            <PanelLeftOpen size={15} />
                         </button>
                     </div>
                 )}
 
                 {/* Navigation Links */}
-                <div className={`flex-1 overflow-y-auto py-5 space-y-5 ${compact ? "px-2" : "px-3.5"}`}>
+                <div className={`flex-1 overflow-y-auto py-4 space-y-6 ${compact ? "px-2" : "px-3"}`}>
                     {navSections.map((section, sIdx) => (
-                        <div key={sIdx} className="space-y-1.5">
+                        <div key={sIdx} className="space-y-1">
                             {!compact ? (
-                                <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
+                                <div className="px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 truncate">
                                     {section.title}
                                 </div>
                             ) : (
-                                sIdx > 0 && <div className="mx-2 my-2 border-t border-slate-800/80" />
+                                sIdx > 0 && <div className="mx-2 my-2 border-t border-gray-200" />
                             )}
-                            <div className="space-y-1">
+                            <div className="space-y-0.5">
                                 {section.items.map((item) => {
                                     const Icon = item.icon;
                                     return (
@@ -216,56 +206,48 @@ export default function AdminSidebar({
                                             title={item.name}
                                             onClick={onCloseMobile}
                                             className={({ isActive }) =>
-                                                `group relative flex items-center rounded-xl text-xs font-bold transition duration-150 ${
+                                                `group relative flex items-center rounded-lg text-[13px] transition duration-150 ${
                                                     compact
-                                                        ? "justify-center p-2.5"
-                                                        : "justify-between px-3.5 py-2.5"
+                                                        ? "justify-center p-2"
+                                                        : "justify-between px-2.5 py-2"
                                                 } ${
                                                     isActive
-                                                        ? "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20"
-                                                        : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
+                                                        ? "bg-red-600 text-white font-semibold border border-red-600 shadow-xs"
+                                                        : "text-gray-600 hover:bg-gray-200/70 hover:text-gray-900 font-medium border border-transparent"
                                                 }`
                                             }
                                         >
                                             {({ isActive }) => (
                                                 <>
-                                                    <div className={`flex items-center min-w-0 ${compact ? "justify-center" : "gap-3"}`}>
+                                                    <div className={`flex items-center min-w-0 ${compact ? "justify-center" : "gap-2.5"}`}>
                                                         <Icon
-                                                            size={18}
+                                                            size={16}
                                                             className={`shrink-0 transition ${
                                                                 isActive
-                                                                    ? "text-slate-950"
-                                                                    : "text-slate-500 group-hover:text-amber-400"
+                                                                    ? "text-white"
+                                                                    : "text-gray-500 group-hover:text-gray-800"
                                                             }`}
                                                         />
                                                         {!compact && <span className="truncate">{item.name}</span>}
                                                     </div>
 
-                                                    {/* Unread Badge or Arrow */}
                                                     {compact ? (
                                                         item.badgeCount > 0 && (
-                                                            <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white">
+                                                            <span className="absolute top-1 right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold text-white">
                                                                 {item.badgeCount}
                                                             </span>
                                                         )
                                                     ) : item.badge ? (
                                                         <span
-                                                            className={`shrink-0 flex h-5 items-center justify-center rounded-full px-2 text-[10px] font-black ${
+                                                            className={`shrink-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
                                                                 isActive
-                                                                    ? "bg-slate-950 text-amber-400"
-                                                                    : item.badgeClass || "bg-amber-500 text-slate-950"
+                                                                    ? "bg-white text-red-700"
+                                                                    : "bg-red-100 text-red-700 border border-red-200"
                                                             }`}
                                                         >
                                                             {item.badge}
                                                         </span>
-                                                    ) : (
-                                                        <ChevronRight
-                                                            size={14}
-                                                            className={`shrink-0 opacity-0 group-hover:opacity-100 transition ${
-                                                                isActive ? "opacity-100 text-slate-950" : "text-slate-600"
-                                                            }`}
-                                                        />
-                                                    )}
+                                                    ) : null}
                                                 </>
                                             )}
                                         </NavLink>
@@ -276,41 +258,38 @@ export default function AdminSidebar({
                     ))}
                 </div>
 
-                {/* View Public Website */}
-                <div className={`${compact ? "px-2" : "px-3.5"} pb-3`}>
+                {/* Public Website Link */}
+                <div className={`${compact ? "px-2" : "px-3"} pb-2`}>
                     <Link
                         to="/"
                         target="_blank"
                         rel="noreferrer"
-                        title="View Public Website"
-                        className={`flex items-center rounded-xl border border-slate-800 bg-slate-900/80 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-amber-400 transition ${
-                            compact ? "justify-center p-2.5" : "justify-between px-3.5 py-2.5"
+                        title="Open Public Marketplace"
+                        className={`flex items-center rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition ${
+                            compact ? "justify-center p-2" : "justify-between px-3 py-2"
                         }`}
                     >
-                        <div className="flex items-center gap-2 min-w-0">
-                            <Sparkles size={14} className="text-amber-400 shrink-0" />
-                            {!compact && <span className="truncate">View Public Website</span>}
-                        </div>
-                        {!compact && <ExternalLink size={14} className="text-slate-500 shrink-0" />}
+                        <span className={compact ? "sr-only" : "truncate"}>Public Marketplace</span>
+                        <ExternalLink size={13} className="text-gray-400 shrink-0" />
                     </Link>
                 </div>
 
                 {/* User Profile & Sign Out Footer */}
-                <div className="border-t border-slate-800 bg-slate-950 p-3.5">
+                <div className="border-t border-gray-200 bg-white p-3">
                     <div className={`flex items-center ${compact ? "flex-col gap-2 justify-center" : "justify-between gap-2"}`}>
-                        <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className={`flex items-center min-w-0 ${compact ? "justify-center" : "gap-2.5"}`}>
                             <div
-                                title={adminUser?.name || "Administrator"}
-                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-xs font-black text-slate-950 shadow-sm"
+                                title={adminUser?.name || "System Administrator"}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow-2xs"
                             >
                                 {adminUser?.name ? adminUser.name.charAt(0).toUpperCase() : "A"}
                             </div>
                             {!compact && (
-                                <div className="overflow-hidden">
-                                    <div className="truncate text-xs font-bold text-white">
+                                <div className="min-w-0">
+                                    <div className="truncate text-xs font-semibold text-gray-800">
                                         {adminUser?.name || "Administrator"}
                                     </div>
-                                    <div className="truncate text-[10px] text-slate-400">
+                                    <div className="truncate text-[11px] text-gray-500">
                                         {adminUser?.email || "admin@bidwallah.com"}
                                     </div>
                                 </div>
@@ -319,52 +298,30 @@ export default function AdminSidebar({
 
                         <button
                             onClick={logout}
-                            title="Sign Out"
-                            className="rounded-xl p-2 text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition cursor-pointer shrink-0"
+                            title="Sign out"
+                            className="shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
                         >
-                            <LogOut size={16} />
+                            <LogOut size={15} />
                         </button>
                     </div>
                 </div>
 
-                {/* Desktop Drag-to-Resize Handle along Right Edge (lg+) */}
+                {/* Desktop Right-Edge Drag Handle for Resizing */}
                 <div
                     role="separator"
                     aria-orientation="vertical"
-                    aria-label="Drag to resize sidebar (double-click to reset)"
-                    title="Drag to resize sidebar • Double-click to reset width"
-                    onMouseDown={onStartResize}
-                    onTouchStart={onStartResize}
+                    aria-label="Resize sidebar"
+                    title="Drag to resize sidebar (double-click to reset)"
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        onStartResize?.();
+                    }}
+                    onTouchStart={() => onStartResize?.()}
                     onDoubleClick={onResetWidth}
-                    className={`group/resizer hidden lg:flex absolute top-0 bottom-0 -right-1.5 z-50 w-3 cursor-col-resize items-center justify-center select-none`}
-                >
-                    {/* Highlight Line */}
-                    <div
-                        className={`h-full w-[3px] rounded-full transition-colors ${
-                            isResizing
-                                ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"
-                                : "bg-transparent group-hover/resizer:bg-amber-500/70"
-                        }`}
-                    />
-
-                    {/* Center Grip Pill */}
-                    <div
-                        className={`absolute top-1/2 -translate-y-1/2 flex h-9 w-4 items-center justify-center rounded-full border transition-all ${
-                            isResizing
-                                ? "border-amber-400 bg-amber-500 text-slate-950 scale-110 shadow-md"
-                                : "border-slate-700 bg-slate-900 text-slate-400 opacity-0 group-hover/resizer:opacity-100 hover:border-amber-400 hover:text-amber-400"
-                        }`}
-                    >
-                        <GripVertical size={11} />
-                    </div>
-
-                    {/* Live Width Indicator Pill while Dragging */}
-                    {isResizing && (
-                        <div className="pointer-events-none absolute top-24 left-4 rounded-lg border border-amber-400/40 bg-slate-950/95 px-2.5 py-1 text-[10px] font-black text-amber-400 whitespace-nowrap shadow-xl">
-                            {compact ? "Compact (76px)" : `${width}px`}
-                        </div>
-                    )}
-                </div>
+                    className={`group/handle absolute top-0 right-0 bottom-0 z-50 hidden w-1.5 cursor-col-resize items-center justify-center lg:flex transition-colors ${
+                        isResizing ? "bg-red-500/40" : "hover:bg-red-400/40"
+                    }`}
+                />
             </aside>
         </>
     );

@@ -7,13 +7,16 @@ import {
     Landmark,
     ShieldCheck,
     ArrowRight,
-    Sparkles,
     Home as HomeIcon,
     Briefcase,
-    DollarSign,
-    Compass
+    DollarSign
 } from "lucide-react";
 import CoverflowCarousel from "./CoverflowCarousel";
+import {
+    DirectPropertyEmblem,
+    VerifiedSealIcon,
+    PropertyFinderIcon
+} from "./BrandIcons";
 
 
 export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal }) {
@@ -44,9 +47,9 @@ export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal })
     // 2. Rotating Live Ticker Announcements
     const liveAnnouncements = [
         "Bidwallah Official Bank Auction Gateway • 1,499+ Listings",
-        "🔴 SBI: 3 New Commercial Properties Gazetted in Kolkata",
-        "⚡ Indian Bank: Residential E-Auction Scheduled for Next Week",
-        "🔒 100% SARFAESI Statutory Clean Title Transfer Guarantee"
+        "SBI Notice: 3 New Commercial Properties Gazetted in Kolkata",
+        "Indian Bank: Residential E-Auction Scheduled for Next Week",
+        "100% SARFAESI Statutory Clean Title Transfer Guarantee"
     ];
     const [tickerIndex, setTickerIndex] = useState(0);
 
@@ -73,12 +76,13 @@ export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal })
     ];
 
     const popularTags = [
-        { label: "📍 Kolkata", query: "Kolkata" },
-        { label: "🏛️ Indian Bank", query: "Indian Bank" },
-        { label: "🏛️ State Bank of India", query: "State Bank of India" },
-        { label: "🏠 Residential Flat", query: "Flat" },
-        { label: "🏢 Commercial Office", query: "Office" },
-        { label: "🔑 Physical Possession", query: "Physical" }
+        { label: "Kolkata", query: "Kolkata" },
+        { label: "HDFC Bank", query: "HDFC Bank" },
+        { label: "Indian Bank", query: "Indian Bank" },
+        { label: "State Bank of India", query: "State Bank of India" },
+        { label: "Residential Flat", query: "Flat" },
+        { label: "Commercial Office", query: "Office" },
+        { label: "Physical Possession", query: "Physical" }
     ];
 
     const handleSearch = (e) => {
@@ -141,7 +145,7 @@ export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal })
                         {/* Top Trust Live Ticker with Pulse */}
                         <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/90 bg-white/95 px-4 py-1.5 text-xs font-bold text-amber-950 shadow-xs backdrop-blur-md">
                             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <Sparkles size={14} className="text-amber-500 shrink-0" />
+                            <VerifiedSealIcon size={14} className="text-amber-600 shrink-0" />
                             <span key={tickerIndex} className="animate-ticker-fade line-clamp-1">
                                 {liveAnnouncements[tickerIndex]}
                             </span>
@@ -178,13 +182,13 @@ export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal })
                                 Discover an authorized bank marketplace for real estate across India, offering transparent reserve prices. <strong className="text-slate-900 font-semibold">20% to 35% below market valuation</strong> with 100% clean title deeds.
                             </p>
 
-                            {/* Quick Animated Action Pills: Fresh Direct Properties + Smart Buyer Finder Popup */}
+                            {/* Quick Action Pills: Fresh Direct Properties + Smart Buyer Finder Popup */}
                             <div className="flex flex-wrap items-center gap-2.5 pt-1">
                                 <Link
                                     to="/fresh-properties"
-                                    className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 animate-pulse-emerald"
+                                    className="group inline-flex items-center gap-2 rounded-xl bg-gray-900 hover:bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5"
                                 >
-                                    <Sparkles size={14} className="text-emerald-200" />
+                                    <DirectPropertyEmblem className="h-4 w-4 text-white" />
                                     <span>Fresh Properties (No Auction{freshCount > 0 ? ` • ${freshCount}` : ""})</span>
                                     <ArrowRight size={13} className="group-hover:translate-x-1 transition" />
                                 </Link>
@@ -193,9 +197,9 @@ export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal })
                                     <button
                                         type="button"
                                         onClick={onOpenWelcomeModal}
-                                        className="group inline-flex items-center gap-2 rounded-2xl border border-amber-400/70 bg-slate-950 hover:bg-slate-900 px-4 py-2.5 text-xs font-black text-amber-400 shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer animate-pulse-glow"
+                                        className="group inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white hover:bg-red-50 hover:border-red-200 px-4 py-2.5 text-xs font-bold text-gray-800 hover:text-red-700 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
                                     >
-                                        <Compass size={14} className="text-amber-400 group-hover:rotate-45 transition duration-300" />
+                                        <PropertyFinderIcon size={14} className="text-red-600" />
                                         <span>Smart Property Finder &amp; Guide</span>
                                     </button>
                                 )}
@@ -267,7 +271,7 @@ export default function Hero({ stats = {}, freshCount = 0, onOpenWelcomeModal })
                                                 type="text"
                                                 value={selectedBank}
                                                 onChange={(e) => setSelectedBank(e.target.value)}
-                                                placeholder="e.g. Indian Bank"
+                                                placeholder="e.g. HDFC Bank, SBI"
                                                 className="w-full bg-transparent text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none truncate"
                                             />
                                         </div>

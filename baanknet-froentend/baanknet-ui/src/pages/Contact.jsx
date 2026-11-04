@@ -88,8 +88,10 @@ export default function Contact() {
                                         <Phone size={16} />
                                     </div>
                                     <div>
-                                        <span className="text-xs font-bold text-slate-400 uppercase block">Helpline</span>
-                                        <span className="text-slate-800 font-semibold">+91 (033) 2400-0199</span>
+                                        <span className="text-xs font-bold text-slate-400 uppercase block">Helpline &amp; Site Visit</span>
+                                        <a href="tel:+917439409340" className="text-slate-900 font-extrabold hover:text-amber-600 transition">
+                                            +91 74394 09340
+                                        </a>
                                     </div>
                                 </div>
 

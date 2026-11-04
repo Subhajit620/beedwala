@@ -7,7 +7,6 @@ import {
     UploadCloud,
     Image as ImageIcon,
     Trash2,
-    Sparkles,
     Eye,
     AlertCircle,
     CheckCircle2,
@@ -17,16 +16,18 @@ import {
     Plus,
     Landmark,
     Phone,
-    Calendar
+    Calendar,
+    Building2
 } from "lucide-react";
 import { fetchPropertyById } from "../../services/propertyService";
-import { createProperty, updateProperty } from "../../services/adminService";
+import { createProperty, updateProperty, togglePropertySold } from "../../services/adminService";
 import { saveFreshProperty } from "../../services/freshPropertyService";
 import { formatINR } from "../../utils/formatters";
 import { useApp } from "../../context/AppContext";
 import { LoadingSpinner } from "../../components/Loading";
 import LocationPickerMap from "../../components/admin/LocationPickerMap";
 import PropertyVideoManager from "../../components/admin/PropertyVideoManager";
+import SoldStamp from "../../components/SoldStamp";
 
 // High quality sample gallery photos for testing (static — defined once at module level)
 const sampleGallery = [
@@ -38,20 +39,20 @@ const sampleGallery = [
 
 // Property Amenities & Facilities options
 const PROPERTY_AMENITIES = [
-    { label: "Community Hall", icon: "🏛️" },
-    { label: "CCTV Surveillance", icon: "📹" },
-    { label: "24/7 Security", icon: "🛡️" },
-    { label: "Gym", icon: "🏋️" },
-    { label: "Indoor Playroom", icon: "🎮" },
-    { label: "Lift / Elevator", icon: "🛗" },
-    { label: "Covered Car Parking", icon: "🚗" },
-    { label: "24/7 Power Backup", icon: "⚡" },
-    { label: "24/7 Water Supply", icon: "💧" },
-    { label: "Landscaped Garden", icon: "🌳" },
-    { label: "Swimming Pool", icon: "🏊" },
-    { label: "Children's Play Area", icon: "👶" },
-    { label: "Fire Safety System", icon: "🔥" },
-    { label: "Intercom Facility", icon: "📞" }
+    { label: "Community Hall", icon: "•" },
+    { label: "CCTV Surveillance", icon: "•" },
+    { label: "24/7 Security", icon: "•" },
+    { label: "Gym", icon: "•" },
+    { label: "Indoor Playroom", icon: "•" },
+    { label: "Lift / Elevator", icon: "•" },
+    { label: "Covered Car Parking", icon: "•" },
+    { label: "24/7 Power Backup", icon: "•" },
+    { label: "24/7 Water Supply", icon: "•" },
+    { label: "Landscaped Garden", icon: "•" },
+    { label: "Swimming Pool", icon: "•" },
+    { label: "Children's Play Area", icon: "•" },
+    { label: "Fire Safety System", icon: "•" },
+    { label: "Intercom Facility", icon: "•" }
 ];
 
 const AUCTION_TIME_SLOTS = [
@@ -128,7 +129,8 @@ export default function AdminPropertyForm() {
         photos: [sampleGallery[0].url, sampleGallery[1].url, sampleGallery[2].url],
         videos: [],
         amenities: ["Community Hall", "CCTV Surveillance", "24/7 Security", "Gym", "Indoor Playroom"],
-        isActive: true
+        isActive: true,
+        isSold: false
     });
     const [customAmenity, setCustomAmenity] = useState("");
     const [videoUploading, setVideoUploading] = useState(false);
@@ -204,7 +206,8 @@ export default function AdminPropertyForm() {
                         amenities: Array.isArray(p.amenities) && p.amenities.length > 0
                             ? p.amenities
                             : ["Community Hall", "CCTV Surveillance", "24/7 Security", "Gym", "Indoor Playroom"],
-                        isActive: p.isActive !== undefined ? p.isActive : true
+                        isActive: p.isActive !== undefined ? p.isActive : true,
+                        isSold: Boolean(p.isSold)
                     });
                 }
             })
@@ -238,6 +241,29 @@ export default function AdminPropertyForm() {
             }
             return { ...prev, [field]: value };
         });
+    };
+
+    const handleQuickSoldToggle = async (nextSold) => {
+        setFormData((prev) => ({
+            ...prev,
+            isSold: nextSold,
+            ...(!nextSold ? { isActive: true } : {})
+        }));
+        if (isEditMode && id) {
+            try {
+                const res = await togglePropertySold(id, nextSold);
+                if (res.success) {
+                    addToast(
+                        nextSold
+                            ? "Property stamped as SOLD OUT!"
+                            : "Property changed back to Active (Available)!",
+                        "success"
+                    );
+                }
+            } catch {
+                addToast("Updated in form — click Save Changes to persist.", "info");
+            }
+        }
     };
 
     // Format a YYYY-MM-DD date string into "12th November 2026"
@@ -536,24 +562,6 @@ export default function AdminPropertyForm() {
         addToast("All gallery photos cleared.", "info");
     };
 
-    // Add preset sample photo to gallery
-    const handleAddSamplePhoto = (url) => {
-        setFormData((prev) => {
-            const existing = Array.isArray(prev.photos) ? prev.photos : [];
-            if (existing.includes(url)) {
-                addToast("Photo already in gallery.", "info");
-                return prev;
-            }
-            const updated = [...existing, url];
-            return {
-                ...prev,
-                photos: updated,
-                displayImage: prev.displayImage || updated[0]
-            };
-        });
-        addToast("Sample photo added to gallery!", "success");
-    };
-
     // ---------- Manual GPS Coordinates (Latitude / Longitude) ----------
     // Returns an error string for an out-of-range / malformed value, or "" when valid/empty.
     const getCoordError = (value, kind) => {
@@ -664,7 +672,8 @@ export default function AdminPropertyForm() {
                         ? formData.videos.map((v) => ({ url: v.url, source: v.source || "link", title: (v.title || "").trim() }))
                         : [],
                     contactPhone: (formData.contactPhone || "").trim(),
-                    isPublished: Boolean(formData.isActive)
+                    isPublished: Boolean(formData.isActive),
+                    isSold: Boolean(formData.isSold)
                 };
                 await saveFreshProperty(null, freshPayload);
                 addToast("Fresh Property published to the Fresh Property list!", "success");
@@ -775,14 +784,34 @@ export default function AdminPropertyForm() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                    {formData.isSold ? (
+                        <button
+                            type="button"
+                            onClick={() => handleQuickSoldToggle(false)}
+                            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2.5 sm:py-2 text-xs font-black text-white shadow-md shadow-emerald-600/20 transition cursor-pointer active:scale-95"
+                            title="Remove SOLD stamp and make property Active again"
+                        >
+                            <span>✓ Change to Active (Available)</span>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => handleQuickSoldToggle(true)}
+                            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3.5 py-2.5 sm:py-2 text-xs font-black transition cursor-pointer active:scale-95"
+                            title="Stamp this property as SOLD OUT"
+                        >
+                            <span>● Stamp as SOLD</span>
+                        </button>
+                    )}
+
                     {!isEditMode && (
                         <button
                             type="button"
                             onClick={handleFillSample}
-                            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 sm:py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition cursor-pointer"
+                            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 sm:py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer shadow-2xs"
                         >
-                            <Sparkles size={14} className="text-amber-600" />
-                            <span>⚡ Fill Sample</span>
+                            <FileText size={14} className="text-red-600" />
+                            <span>Fill Sample Data</span>
                         </button>
                     )}
 
@@ -790,7 +819,7 @@ export default function AdminPropertyForm() {
                         type="button"
                         onClick={handleSubmit}
                         disabled={saving || videoUploading}
-                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-5 py-2.5 sm:py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 transition cursor-pointer shadow-md disabled:opacity-50 active:scale-95"
+                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-5 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-red-700 transition cursor-pointer shadow-xs disabled:opacity-50 active:scale-95"
                     >
                         <Save size={15} />
                         <span>
@@ -808,29 +837,29 @@ export default function AdminPropertyForm() {
 
             {/* Listing Type Selector (Fresh Property vs Auction Property) when creating */}
             {!isEditMode && (
-                <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
                         Where should this property be listed?
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button
                             type="button"
                             onClick={() => setListingMode("auction")}
-                            className={`flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition cursor-pointer ${
+                            className={`flex items-start gap-3 rounded-xl border p-4 text-left transition cursor-pointer ${
                                 listingMode === "auction"
-                                    ? "border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20"
-                                    : "border-slate-200 bg-slate-50/50 hover:border-slate-300"
+                                    ? "border-red-500 bg-red-50/50 ring-2 ring-red-500/15"
+                                    : "border-gray-200 bg-gray-50/40 hover:border-gray-300"
                             }`}
                         >
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${listingMode === "auction" ? "bg-slate-950 text-amber-400" : "bg-slate-200 text-slate-600"}`}>
+                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${listingMode === "auction" ? "bg-red-600 text-white" : "bg-gray-200 text-gray-600"}`}>
                                 <Landmark size={18} />
                             </div>
                             <div>
-                                <span className="block text-sm font-black text-slate-900">
+                                <span className="block text-sm font-bold text-slate-900">
                                     Auction Property List
                                 </span>
                                 <span className="mt-0.5 block text-xs text-slate-500">
-                                    Bank SARFAESI auction listing with reserve price & bank details. Shown on the <strong>Auction Property</strong> page.
+                                    Bank SARFAESI auction listing with reserve price &amp; bank details. Shown on the <strong>Auction Property</strong> page.
                                 </span>
                             </div>
                         </button>
@@ -838,17 +867,17 @@ export default function AdminPropertyForm() {
                         <button
                             type="button"
                             onClick={() => setListingMode("fresh")}
-                            className={`flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition cursor-pointer ${
+                            className={`flex items-start gap-3 rounded-xl border p-4 text-left transition cursor-pointer ${
                                 listingMode === "fresh"
-                                    ? "border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20"
-                                    : "border-slate-200 bg-slate-50/50 hover:border-slate-300"
+                                    ? "border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/15"
+                                    : "border-slate-200 bg-slate-50/40 hover:border-slate-300"
                             }`}
                         >
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${listingMode === "fresh" ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"}`}>
-                                <Sparkles size={18} />
+                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${listingMode === "fresh" ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                                <Building2 size={18} />
                             </div>
                             <div>
-                                <span className="block text-sm font-black text-slate-900">
+                                <span className="block text-sm font-bold text-slate-900">
                                     Fresh Property List (Direct Sale · No Auction)
                                 </span>
                                 <span className="mt-0.5 block text-xs text-slate-500">
@@ -873,7 +902,7 @@ export default function AdminPropertyForm() {
                 {/* Left: Streamlined Form (7 Columns) */}
                 <div className="lg:col-span-7 space-y-5">
                     {/* SECTION 1: Basic Property Details */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                    <div className="rounded-3xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-5 sm:p-6 shadow-xs space-y-4">
                         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
                                 1
@@ -1023,7 +1052,7 @@ export default function AdminPropertyForm() {
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
                                         <Calendar size={14} className="text-amber-600" />
-                                        <span>📅 EMD Submission Last Date, 🔨 Auction Date & ⏰ Auction Time</span>
+                                        <span>EMD Submission Last Date, Auction Date &amp; Auction Time</span>
                                     </span>
                                     <div className="flex flex-wrap items-center gap-1.5">
                                         {[
@@ -1056,7 +1085,7 @@ export default function AdminPropertyForm() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                     <div>
                                         <label htmlFor="emd-submission-date" className="block text-xs font-bold text-slate-700 mb-1">
-                                            📅 EMD Submission Last Date
+                                            EMD Submission Last Date
                                         </label>
                                         <input
                                             id="emd-submission-date"
@@ -1072,7 +1101,7 @@ export default function AdminPropertyForm() {
 
                                     <div>
                                         <label htmlFor="emd-submission-time" className="block text-xs font-bold text-slate-700 mb-1">
-                                            ⏰ EMD Cutoff Time
+                                            EMD Cutoff Time
                                         </label>
                                         <select
                                             id="emd-submission-time"
@@ -1096,7 +1125,7 @@ export default function AdminPropertyForm() {
 
                                     <div>
                                         <label htmlFor="auction-date" className="block text-xs font-bold text-slate-700 mb-1">
-                                            🔨 Auction Date
+                                            Auction Date
                                         </label>
                                         <input
                                             id="auction-date"
@@ -1129,7 +1158,7 @@ export default function AdminPropertyForm() {
 
                                     <div>
                                         <label htmlFor="auction-time" className="block text-xs font-bold text-slate-700 mb-1">
-                                            ⏰ Auction Time
+                                            Auction Time
                                         </label>
                                         <select
                                             id="auction-time"
@@ -1157,7 +1186,7 @@ export default function AdminPropertyForm() {
                                     <div>
                                         <div className="flex items-center justify-between mb-1">
                                             <label htmlFor="emd-amount" className="block text-xs font-bold text-slate-700">
-                                                💰 EMD Amount (INR ₹)
+                                                EMD Amount (INR ₹)
                                             </label>
                                             {priceNumber > 0 && (
                                                 <button
@@ -1188,7 +1217,7 @@ export default function AdminPropertyForm() {
 
                                     <div>
                                         <label htmlFor="bid-increment" className="block text-xs font-bold text-slate-700 mb-1">
-                                            💰 Bid Increment (INR ₹)
+                                            Bid Increment (INR ₹)
                                         </label>
                                         <input
                                             id="bid-increment"
@@ -1205,7 +1234,7 @@ export default function AdminPropertyForm() {
 
                                     <div>
                                         <label htmlFor="auction-contact-phone" className="block text-xs font-bold text-slate-700 mb-1">
-                                            📞 Site Visit Contact No.
+                                            Site Visit Contact No.
                                         </label>
                                         <input
                                             id="auction-contact-phone"
@@ -1225,7 +1254,7 @@ export default function AdminPropertyForm() {
                     </div>
 
                     {/* SECTION 2: Manual Property Description */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                    <div className="rounded-3xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-5 sm:p-6 shadow-xs space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white font-black text-xs">
@@ -1258,8 +1287,8 @@ export default function AdminPropertyForm() {
                                         }}
                                         className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 text-[11px] font-bold text-indigo-700 transition cursor-pointer"
                                     >
-                                        <Sparkles size={12} />
-                                        <span>📋 Auto-Format Notice from Fields</span>
+                                        <FileText size={12} />
+                                        <span>Auto-Format Notice from Fields</span>
                                     </button>
                                 )}
                             </div>
@@ -1285,8 +1314,8 @@ export default function AdminPropertyForm() {
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
                                     <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                                        <Sparkles size={14} className="text-emerald-600" />
-                                        <span>Property Amenities & Facilities</span>
+                                        <CheckCircle2 size={14} className="text-emerald-600" />
+                                        <span>Property Amenities &amp; Facilities</span>
                                     </span>
                                     <p className="text-[11px] text-slate-500 mt-0.5">
                                         Tap to select amenities included with this property ({(formData.amenities || []).length} selected)
@@ -1404,7 +1433,7 @@ export default function AdminPropertyForm() {
                                         }
                                         setCustomAmenity("");
                                     }}
-                                    className="h-9 rounded-xl bg-slate-950 hover:bg-slate-800 px-3.5 text-xs font-bold text-amber-400 transition cursor-pointer shrink-0"
+                                    className="h-9 rounded-lg bg-blue-600 hover:bg-blue-700 px-3.5 text-xs font-semibold text-white transition cursor-pointer shrink-0"
                                 >
                                     + Add Amenity
                                 </button>
@@ -1421,7 +1450,7 @@ export default function AdminPropertyForm() {
                                                     key={custom}
                                                     className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-900"
                                                 >
-                                                    <span>✨ {custom}</span>
+                                                    <span>• {custom}</span>
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -1442,7 +1471,7 @@ export default function AdminPropertyForm() {
                     </div>
 
                     {/* SECTION 3: Bank & Location Details */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                    <div className="rounded-3xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-5 sm:p-6 shadow-xs space-y-4">
                         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-black text-xs">
                                 3
@@ -1491,6 +1520,7 @@ export default function AdminPropertyForm() {
                                     >
                                         <option value="State Bank of India">State Bank of India (SBI)</option>
                                         <option value="Punjab National Bank">Punjab National Bank (PNB)</option>
+                                        <option value="HDFC Bank">HDFC Bank</option>
                                         <option value="Bank of Baroda">Bank of Baroda</option>
                                         <option value="Canara Bank">Canara Bank</option>
                                         <option value="Indian Bank">Indian Bank</option>
@@ -1499,6 +1529,8 @@ export default function AdminPropertyForm() {
                                         <option value="Central Bank of India">Central Bank of India</option>
                                         <option value="IDBI Bank">IDBI Bank</option>
                                         <option value="Bank of Maharashtra">Bank of Maharashtra</option>
+                                        <option value="ICICI Bank">ICICI Bank</option>
+                                        <option value="Axis Bank">Axis Bank</option>
                                         <option value="Other Bank">Other Financial Institution</option>
                                     </select>
                                 </div>
@@ -1695,7 +1727,7 @@ export default function AdminPropertyForm() {
                     </div>
 
                     {/* SECTION 4: Property Photo Gallery (Multi-Image Upload + Cover Selector) */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                    <div className="rounded-3xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-5 sm:p-6 shadow-xs space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white font-black text-xs">
@@ -1849,7 +1881,7 @@ export default function AdminPropertyForm() {
                                         Drag & drop multiple property photos here or click to browse
                                     </p>
                                 </div>
-                                <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-amber-400 shadow-xs hover:bg-slate-900 transition">
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition">
                                     <Camera size={14} />
                                     <span>Browse Multiple Photos from Device</span>
                                 </span>
@@ -1858,37 +1890,6 @@ export default function AdminPropertyForm() {
                                 </span>
                             </div>
                         )}
-
-                        {/* Quick Stock Sample Photos to populate gallery */}
-                        <div className="pt-2 border-t border-slate-100">
-                            <span className="text-[11px] font-bold text-slate-400 block mb-2">
-                                Or add quick sample photos to gallery:
-                            </span>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {sampleGallery.map((item, idx) => (
-                                    <button
-                                        key={idx}
-                                        type="button"
-                                        onClick={() => handleAddSamplePhoto(item.url)}
-                                        className="group relative overflow-hidden rounded-xl border border-slate-200 hover:border-amber-400 text-left p-1.5 transition cursor-pointer bg-white"
-                                    >
-                                        <img
-                                            src={item.url}
-                                            alt={item.label}
-                                            className="h-14 w-full rounded-lg object-cover group-hover:scale-105 transition"
-                                        />
-                                        <div className="flex items-center justify-between mt-1 px-0.5">
-                                            <span className="text-[10px] font-bold text-slate-700 truncate">
-                                                {item.label}
-                                            </span>
-                                            <span className="text-[10px] font-black text-amber-600">
-                                                + Add
-                                            </span>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
 
                         {/* Property Videos (file upload or YouTube / Vimeo / MP4 link) */}
                         <PropertyVideoManager
@@ -1930,6 +1931,34 @@ export default function AdminPropertyForm() {
                                 <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
                         </div>
+
+                        {/* SOLD OUT Stamp Toggle Switch */}
+                        <div className={`flex items-center justify-between p-4 rounded-2xl border transition ${
+                            formData.isSold
+                                ? "bg-rose-50/80 border-rose-200"
+                                : "bg-slate-50 border-slate-100"
+                        }`}>
+                            <div>
+                                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                                    <span>Mark Property as SOLD (Show &ldquo;SOLD OUT&rdquo; Stamp)</span>
+                                </span>
+                                <span className="text-[11px] text-slate-500">
+                                    {formData.isSold
+                                        ? "A bold red 'SOLD OUT' stamp will be displayed over this property on the website"
+                                        : "Property is currently available for buyers / bidders"}
+                                </span>
+                            </div>
+
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={Boolean(formData.isSold)}
+                                    onChange={(e) => handleQuickSoldToggle(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                            </label>
+                        </div>
                     </div>
 
                     {/* Bottom Save Action Button */}
@@ -1944,7 +1973,7 @@ export default function AdminPropertyForm() {
                         <button
                             type="submit"
                             disabled={saving || videoUploading}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-xs font-bold text-amber-400 hover:bg-slate-900 shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-xs font-semibold text-white hover:bg-red-700 shadow-xs transition cursor-pointer active:scale-95 disabled:opacity-50"
                         >
                             <Save size={16} />
                             <span>
@@ -1974,14 +2003,14 @@ export default function AdminPropertyForm() {
                         </div>
 
                         {/* Public Card Mockup */}
-                        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+                        <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white/60 backdrop-blur-md shadow-xl">
                             {/* Card Image */}
                             <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
                                 {coverPhoto ? (
                                     <img
                                         src={coverPhoto}
                                         alt="Listing Preview"
-                                        className="h-full w-full object-cover"
+                                        className={`h-full w-full object-cover ${formData.isSold ? "grayscale contrast-110" : ""}`}
                                         onError={(e) => {
                                             e.target.src = sampleGallery[0].url;
                                         }}
@@ -1993,7 +2022,11 @@ export default function AdminPropertyForm() {
                                 )}
 
                                 <div className="absolute top-3 left-3">
-                                    <span className="rounded-lg bg-slate-950/80 backdrop-blur-md px-2.5 py-1 text-[10px] font-black text-amber-400 border border-slate-800">
+                                    <span className={`rounded-lg backdrop-blur-md px-2.5 py-1 text-[10px] font-black border ${
+                                        formData.isSold
+                                            ? "bg-slate-900/80 text-slate-300 border-white/15"
+                                            : "bg-slate-950/80 text-amber-400 border-slate-800"
+                                    }`}>
                                         {isFreshMode ? "Direct Sale · No Auction" : (formData.bankName || "SARFAESI Bank")}
                                     </span>
                                 </div>
@@ -2001,14 +2034,18 @@ export default function AdminPropertyForm() {
                                 <div className="absolute top-3 right-3 flex items-center gap-1.5">
                                     <span
                                         className={`rounded-lg px-2 py-0.5 text-[10px] font-black uppercase shadow-xs ${
-                                            formData.isActive
+                                            formData.isSold
+                                                ? "bg-rose-600 text-white"
+                                                : formData.isActive
                                                 ? "bg-emerald-500 text-white"
                                                 : "bg-slate-700 text-slate-300"
                                         }`}
                                     >
-                                        {formData.isActive ? "Active Deal" : "Draft"}
+                                        {formData.isSold ? "SOLD OUT" : formData.isActive ? "Active Deal" : "Draft"}
                                     </span>
                                 </div>
+
+                                {formData.isSold && <SoldStamp variant="card" />}
 
                                 {/* Gallery Photo Count Pill */}
                                 {formData.photos && formData.photos.length > 1 && (
@@ -2030,8 +2067,12 @@ export default function AdminPropertyForm() {
                                             src={pic}
                                             alt="thumb"
                                             className={`h-11 w-11 rounded-lg object-cover shrink-0 border transition ${
+                                                formData.isSold ? "grayscale" : ""
+                                            } ${
                                                 pic === coverPhoto
-                                                    ? "border-amber-500 ring-2 ring-amber-500/30"
+                                                    ? formData.isSold
+                                                        ? "border-slate-600 ring-2 ring-slate-500/30"
+                                                        : "border-amber-500 ring-2 ring-amber-500/30"
                                                     : "border-slate-200 opacity-70"
                                             }`}
                                         />
@@ -2051,7 +2092,7 @@ export default function AdminPropertyForm() {
                                     <span>{formData.area ? `${formData.area} sq.ft` : "Area on request"}</span>
                                 </div>
 
-                                <h4 className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug">
+                                <h4 className={`text-sm font-bold line-clamp-2 leading-snug ${formData.isSold ? "text-slate-700" : "text-slate-900"}`}>
                                     {formData.propertyHeading || "Property Title Will Appear Here"}
                                 </h4>
 
@@ -2063,7 +2104,7 @@ export default function AdminPropertyForm() {
                                 )}
 
                                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                    <MapPin size={13} className="text-amber-500 shrink-0" />
+                                    <MapPin size={13} className={`${formData.isSold ? "text-slate-400" : "text-amber-500"} shrink-0`} />
                                     <span className="truncate">
                                         {formData.locality ? `${formData.locality}, ` : ""}
                                         {formData.cityName || "Kolkata"}, {formData.stateName || "West Bengal"}
@@ -2077,9 +2118,13 @@ export default function AdminPropertyForm() {
                                             return (
                                                 <span
                                                     key={amenity}
-                                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800"
+                                                    className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-bold ${
+                                                        formData.isSold
+                                                            ? "bg-slate-100 border-slate-200 text-slate-600"
+                                                            : "bg-emerald-50 border-emerald-200/80 text-emerald-800"
+                                                    }`}
                                                 >
-                                                    <span>{preset ? preset.icon : "✨"}</span>
+                                                    <span>{preset ? preset.icon : "•"}</span>
                                                     <span>{amenity}</span>
                                                 </span>
                                             );
@@ -2092,11 +2137,11 @@ export default function AdminPropertyForm() {
                                     </div>
                                 )}
 
-                                {!isFreshMode && (formData.emdSubmissionDate || formData.auctionDate) && (
+                                {!isFreshMode && !formData.isSold && (formData.emdSubmissionDate || formData.auctionDate) && (
                                     <div className="rounded-xl bg-amber-50/70 border border-amber-200/80 p-2.5 space-y-1 text-[11px]">
                                         {formData.emdSubmissionDate && (
                                             <div className="font-bold text-rose-700 flex items-center justify-between gap-2">
-                                                <span>📅 EMD Submission Last Date:</span>
+                                                <span>EMD Submission Last Date:</span>
                                                 <span>
                                                     {formatOrdinalDate(formData.emdSubmissionDate)} ({formData.emdSubmissionTime || "5:00 PM"})
                                                 </span>
@@ -2104,13 +2149,13 @@ export default function AdminPropertyForm() {
                                         )}
                                         {formData.auctionDate && (
                                             <div className="font-bold text-slate-900 flex items-center justify-between gap-2">
-                                                <span>🔨 Auction Date:</span>
+                                                <span>Auction Date:</span>
                                                 <span>{formatOrdinalDate(formData.auctionDate)}</span>
                                             </div>
                                         )}
                                         {formData.auctionTime && (
                                             <div className="font-bold text-emerald-700 flex items-center justify-between gap-2">
-                                                <span>⏰ Auction Time:</span>
+                                                <span>Auction Time:</span>
                                                 <span>{formData.auctionTime}</span>
                                             </div>
                                         )}
@@ -2120,22 +2165,36 @@ export default function AdminPropertyForm() {
                                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                                     <div>
                                         <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                                            {isFreshMode ? "Asking Price" : "Reserve Price"}
+                                            {formData.isSold
+                                                ? "Last Reserve Price"
+                                                : isFreshMode
+                                                ? "Asking Price"
+                                                : "Reserve Price"}
                                         </span>
-                                        <span className="text-base font-black text-emerald-600">
+                                        <span className={`text-base font-black ${
+                                            formData.isSold
+                                                ? "text-slate-400 line-through decoration-rose-500 decoration-2"
+                                                : "text-emerald-600"
+                                        }`}>
                                             {priceNumber > 0 ? formatINR(priceNumber) : "₹0"}
                                         </span>
                                     </div>
 
-                                    <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-700">
-                                        {isFreshMode ? "Fresh Property" : formData.propertyPossessionType}
-                                    </span>
+                                    {formData.isSold ? (
+                                        <span className="rounded-lg bg-rose-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+                                            SOLD OUT
+                                        </span>
+                                    ) : (
+                                        <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-700">
+                                            {isFreshMode ? "Fresh Property" : formData.propertyPossessionType}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                            💡 This preview updates in real-time. Buyers will see your complete image gallery with interactive thumbnail reel.
+                            This preview updates in real-time. Buyers will see your complete image gallery with interactive thumbnail reel.
                         </p>
                     </div>
                 </div>

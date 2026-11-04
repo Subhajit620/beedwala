@@ -238,11 +238,17 @@ export default function PropertyDetails() {
                                     : (property.displayImage ? [property.displayImage] : [])
                             }
                             title={cleanTitle}
+                            isSold={Boolean(property.isSold)}
                         />
 
                         {/* 2. Main Title Banner */}
                         <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs">
                             <div className="flex flex-wrap items-center gap-2 mb-3">
+                                {property.isSold && (
+                                    <span className="rounded-xl bg-rose-600 px-3 py-1 text-xs font-black uppercase tracking-wider text-white shadow-xs">
+                                        ● SOLD OUT
+                                    </span>
+                                )}
                                 {property.propertyType && (
                                     <span className="rounded-xl bg-amber-50 border border-amber-200/60 px-3 py-1 text-xs font-bold text-amber-700">
                                         {property.propertyType}
@@ -609,8 +615,19 @@ export default function PropertyDetails() {
                                 </div>
                             )}
 
-                            {/* Sticky Compact Auction Countdown */}
-                            <AuctionCountdown property={property} variant="compact" />
+                            {/* Sticky Compact Auction Countdown or SOLD OUT Banner */}
+                            {property.isSold ? (
+                                <div className="rounded-2xl border-2 border-rose-200 bg-rose-50/90 p-4 text-center space-y-1">
+                                    <span className="inline-block rounded-lg bg-rose-600 px-3 py-1 text-xs font-black uppercase tracking-widest text-white shadow-xs">
+                                        ● SOLD OUT
+                                    </span>
+                                    <p className="text-xs font-semibold text-rose-900 pt-1">
+                                        This property has been sold. Looking for a similar property in {property.cityName || "this area"}?
+                                    </p>
+                                </div>
+                            ) : (
+                                <AuctionCountdown property={property} variant="compact" />
+                            )}
 
                             {/* Key Highlights List */}
                             <div className="space-y-2.5 pt-2 text-xs text-slate-600">
@@ -640,29 +657,40 @@ export default function PropertyDetails() {
                                         </span>
                                     </div>
                                 )}
-                                {property.contactPhone && (
-                                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                                        <span className="text-slate-400 font-medium">Site Visit Contact</span>
-                                        <a
-                                            href={`tel:${String(property.contactPhone).replace(/\s+/g, "")}`}
-                                            className="font-bold text-emerald-700 hover:underline flex items-center gap-1"
-                                        >
-                                            <Phone size={12} />
-                                            <span>{property.contactPhone}</span>
-                                        </a>
-                                    </div>
-                                )}
+                                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                    <span className="text-slate-400 font-medium">Site Visit &amp; Helpline</span>
+                                    <a
+                                        href={`tel:${String(property.contactPhone || "7439409340").replace(/\s+/g, "")}`}
+                                        className="font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                                    >
+                                        <Phone size={12} />
+                                        <span>{property.contactPhone || "+91 74394 09340"}</span>
+                                    </a>
+                                </div>
                             </div>
 
                             {/* Action Buttons */}
                             <div className="pt-2 space-y-3">
+                                {!property.isSold && (
+                                    <a
+                                        href={`tel:${String(property.contactPhone || "7439409340").replace(/\s+/g, "")}`}
+                                        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 py-3.5 px-4 text-xs font-black text-white shadow-md shadow-emerald-600/20 transition cursor-pointer active:scale-[0.98]"
+                                    >
+                                        <Phone size={16} />
+                                        <span>Call Direct: {property.contactPhone || "+91 74394 09340"}</span>
+                                    </a>
+                                )}
                                 <button
                                     type="button"
                                     onClick={() => setInquiryOpen(true)}
                                     className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 px-4 text-xs font-bold text-slate-950 shadow-md shadow-amber-500/20 transition cursor-pointer active:scale-[0.98]"
                                 >
                                     <Phone size={16} />
-                                    <span>Contact Authorized Bank Desk</span>
+                                    <span>
+                                        {property.isSold
+                                            ? "Sold Out — Ask for Similar Property"
+                                            : "Request Property Dossier & EMD Details"}
+                                    </span>
                                 </button>
 
                                 <Link
@@ -711,7 +739,8 @@ export default function PropertyDetails() {
                                 <div key={p.sourcePropertyId || p._id} className="flex flex-col">
                                     {p.recommendationReason && (
                                         <div className="mb-2 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/80 inline-flex items-center gap-1 self-start">
-                                            <span>✨ {p.recommendationReason}</span>
+                                            <CheckCircle2 size={12} className="text-amber-600" />
+                                            <span>{p.recommendationReason}</span>
                                         </div>
                                     )}
                                     <PropertyCard property={p} />
@@ -746,7 +775,7 @@ export default function PropertyDetails() {
                         className="shrink-0 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 active:scale-95 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md shadow-amber-500/20 transition cursor-pointer"
                     >
                         <Phone size={14} />
-                        <span>Contact Bank Desk</span>
+                        <span>{property.isSold ? "Ask Similar" : "Contact Bank Desk"}</span>
                     </button>
                 </div>
             </div>

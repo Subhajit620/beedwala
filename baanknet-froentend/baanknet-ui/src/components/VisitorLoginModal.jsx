@@ -3,7 +3,6 @@ import {
     Lock,
     User,
     Phone,
-    Sparkles,
     ShieldCheck,
     ArrowRight,
     CheckCircle2,
@@ -11,6 +10,7 @@ import {
     Building2,
     AlertCircle
 } from "lucide-react";
+import { VerifiedSealIcon } from "./BrandIcons";
 import { useApp } from "../context/AppContext";
 import api from "../services/api";
 
@@ -36,30 +36,30 @@ export function PropertyLockWall({
     };
 
     return (
-        <div className="relative overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-slate-950 text-white p-6 sm:p-10 shadow-xl my-4 animate-fade-in">
-            <div className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-amber-500/15 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="relative overflow-hidden rounded-3xl border border-amber-200/90 bg-gradient-to-br from-white via-amber-50/40 to-slate-50 text-slate-900 p-6 sm:p-10 shadow-lg my-4 animate-fade-in">
+            <div className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-emerald-300/20 blur-3xl" />
 
             <div className="relative z-10 max-w-lg mx-auto text-center space-y-4">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-lg">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 border border-amber-200 text-amber-700 shadow-xs">
                     <Lock size={26} />
                 </div>
 
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
                     {title}
                 </h3>
 
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                     {subtitle}
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1 text-xs text-slate-300">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 border border-slate-800 px-3 py-1.5">
-                        <CheckCircle2 size={14} className="text-emerald-400" />
+                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1 text-xs text-slate-700">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-1.5 shadow-2xs">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
                         <span>Fresh Direct Properties (No Auction)</span>
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 border border-slate-800 px-3 py-1.5">
-                        <CheckCircle2 size={14} className="text-amber-400" />
+                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-1.5 shadow-2xs">
+                        <CheckCircle2 size={14} className="text-amber-600" />
                         <span>1,499+ Bank Auction Properties</span>
                     </span>
                 </div>
@@ -68,7 +68,7 @@ export function PropertyLockWall({
                     <button
                         type="button"
                         onClick={() => openVisitorLogin(true)}
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-400 px-7 py-3.5 text-sm font-black text-slate-950 shadow-lg transition cursor-pointer"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-400 px-7 py-3.5 text-sm font-black text-slate-950 shadow-md transition cursor-pointer"
                     >
                         <span>Enter Name &amp; Mobile to View Properties</span>
                         <ArrowRight size={16} />
@@ -78,17 +78,17 @@ export function PropertyLockWall({
                         <button
                             type="button"
                             onClick={handleAdminQuickUnlock}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-400/50 bg-emerald-500/15 hover:bg-emerald-500/25 px-5 py-3.5 text-xs font-black text-emerald-300 transition cursor-pointer"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 px-5 py-3.5 text-xs font-black text-emerald-800 transition cursor-pointer"
                         >
-                            <ShieldCheck size={15} className="text-emerald-400" />
+                            <ShieldCheck size={15} className="text-emerald-600" />
                             <span>Unlock as Admin</span>
                         </button>
                     )}
                 </div>
 
                 {visitorCountdown > 0 && (
-                    <p className="text-[11px] font-medium text-slate-400">
-                        Sign-in box opens automatically in <span className="text-amber-400 font-bold">{visitorCountdown}s</span>
+                    <p className="text-[11px] font-medium text-slate-500">
+                        Sign-in box opens automatically in <span className="text-amber-700 font-bold">{visitorCountdown}s</span>
                     </p>
                 )}
             </div>
@@ -203,7 +203,7 @@ export default function VisitorLoginModal() {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/35 backdrop-blur-md animate-fade-in"
             role="dialog"
             aria-modal="true"
             aria-label="Sign in to view properties"
@@ -215,18 +215,18 @@ export default function VisitorLoginModal() {
                 }}
             />
 
-            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-2xl animate-popup-spring">
-                {/* Clean Top Banner */}
-                <div className="flex items-center justify-between bg-slate-950 px-6 py-4 text-white">
+            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200/90 bg-white text-slate-900 shadow-2xl animate-popup-spring">
+                {/* Light & Clean Top Banner */}
+                <div className="flex items-center justify-between border-b border-amber-100 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-slate-50 px-6 py-4 text-slate-900">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-slate-950 shadow-sm">
-                            <Sparkles size={20} />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 border border-amber-200/80 text-amber-700 shadow-2xs">
+                            <VerifiedSealIcon size={20} />
                         </div>
                         <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block">
                                 Free Instant Access
                             </span>
-                            <h3 className="text-base font-black text-white">
+                            <h3 className="text-base font-black text-slate-900">
                                 Sign In to View All Properties
                             </h3>
                         </div>
@@ -237,7 +237,7 @@ export default function VisitorLoginModal() {
                             type="button"
                             onClick={() => setIsVisitorLoginOpen(false)}
                             aria-label="Close sign in popup"
-                            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+                            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/70 hover:text-slate-800 transition cursor-pointer"
                         >
                             <X size={18} />
                         </button>
@@ -245,7 +245,7 @@ export default function VisitorLoginModal() {
                 </div>
 
                 {/* Simple 2-Field Form Body */}
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-4 bg-white">
                     <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                         Enter your <strong>Name</strong> and <strong>Mobile Number</strong> below to unlock all <strong>Fresh Properties (No Auction)</strong> and <strong>Bank Auction Listings</strong>.
                     </p>
@@ -270,7 +270,7 @@ export default function VisitorLoginModal() {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="e.g. Rahul Sharma"
-                                    className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-3 text-sm font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-3.5 py-3 text-sm font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
                                 />
                             </div>
                         </div>
@@ -287,7 +287,7 @@ export default function VisitorLoginModal() {
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="10-digit mobile number"
-                                    className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-3 text-sm font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-10 pr-3.5 py-3 text-sm font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
                                 />
                             </div>
                         </div>
@@ -298,7 +298,7 @@ export default function VisitorLoginModal() {
                             </label>
                             <div className="grid grid-cols-3 gap-2">
                                 {[
-                                    { id: "Both Fresh & Auction Properties", label: "Both", icon: Sparkles },
+                                    { id: "Both Fresh & Auction Properties", label: "Both", icon: VerifiedSealIcon },
                                     { id: "Fresh Property (Direct Sale)", label: "Fresh (No Auction)", icon: ShieldCheck },
                                     { id: "Bank Auction Property", label: "Bank Auction", icon: Building2 }
                                 ].map((opt) => {
@@ -311,11 +311,11 @@ export default function VisitorLoginModal() {
                                             onClick={() => setPreference(opt.id)}
                                             className={`flex items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[11px] font-bold transition cursor-pointer ${
                                                 active
-                                                    ? "border-slate-950 bg-slate-950 text-amber-400"
+                                                    ? "border-amber-400 bg-amber-50 text-amber-900 ring-1 ring-amber-400/30 shadow-2xs"
                                                     : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
                                             }`}
                                         >
-                                            <Icon size={12} />
+                                            <Icon size={12} className={active ? "text-amber-600" : "text-slate-400"} />
                                             <span>{opt.label}</span>
                                         </button>
                                     );

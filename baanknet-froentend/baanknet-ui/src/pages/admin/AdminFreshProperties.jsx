@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash2, X, UploadCloud, MessageSquareText, MapPin, Sparkles, ExternalLink } from "lucide-react";
-import { fetchFreshProperties, saveFreshProperty, deleteFreshProperty } from "../../services/freshPropertyService";
+import { Plus, Pencil, Trash2, X, UploadCloud, MessageSquareText, MapPin, Building2, ExternalLink, Film, Loader2 } from "lucide-react";
+import { fetchFreshProperties, saveFreshProperty, appendFreshPropertyVideo, deleteFreshProperty } from "../../services/freshPropertyService";
+import { uploadPropertyVideo } from "../../services/adminService";
+import { VIDEO_ACCEPT, MAX_VIDEO_MB } from "../../utils/media";
 import { formatINR } from "../../utils/formatters";
 import { useApp } from "../../context/AppContext";
 import LocationPickerMap from "../../components/admin/LocationPickerMap";
 import PropertyVideoManager from "../../components/admin/PropertyVideoManager";
 
-const emptyForm = { title: "", description: "", price: "", propertyType: "Apartment", address: "", city: "", state: "", pincode: "", latitude: "", longitude: "", area: "", bedrooms: "", bathrooms: "", features: "", photos: "", uploads: [], videos: [], contactPhone: "", isPublished: true };
-const inputClass = "mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100";
+const emptyForm = { title: "", description: "", price: "", propertyType: "Apartment", address: "", city: "", state: "", pincode: "", latitude: "", longitude: "", area: "", bedrooms: "", bathrooms: "", features: "", photos: "", uploads: [], videos: [], contactPhone: "", isPublished: true, isSold: false };
+const inputClass = "mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10";
 const errorMessage = error => error.response?.data?.message || "Unable to connect. Please try again.";
 const MAX_PHOTOS = 15;
 
@@ -48,9 +50,13 @@ export default function AdminFreshProperties() {
     const [form, setForm] = useState(null);
     const [busy, setBusy] = useState(false);
     const [videoUploading, setVideoUploading] = useState(false);
+    const [quickUploadState, setQuickUploadState] = useState(null); // { propertyId, progress }
     const [autoFilledFields, setAutoFilledFields] = useState([]);
     const autoFillTimerRef = useRef(null);
     const fileInputRef = useRef(null);
+    const rowVideoInputRef = useRef(null);
+    const rowVideoTargetRef = useRef(null);
+    const videoSectionRef = useRef(null);
 
     useEffect(() => () => clearTimeout(autoFillTimerRef.current), []);
 
@@ -63,7 +69,7 @@ export default function AdminFreshProperties() {
     // oxlint-disable-next-line react/set-state-in-effect -- intentional: fetch data when the page opens
     useEffect(() => { load(); }, []);
 
-    function openForm(property) {
+    function openForm(property, scrollToVideo = false) {
         setError(""); setNotice("");
         setEditing(property?._id || null);
         const photos = property?.photos || [];
@@ -82,6 +88,48 @@ export default function AdminFreshProperties() {
                 videos: Array.isArray(property.videos) ? property.videos.filter(v => v && v.url) : []
             }
             : { ...emptyForm });
+        if (scrollToVideo) {
+            setTimeout(() => {
+                videoSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 120);
+        }
+    }
+    async function handleQuickRowVideoUpload(e) {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        const targetProperty = rowVideoTargetRef.current;
+        if (!file || !targetProperty) return;
+        if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+            addToast(`Video is larger than ${MAX_VIDEO_MB} MB.`, "error");
+            return;
+        }
+        setQuickUploadState({ propertyId: targetProperty._id, progress: 0 });
+        try {
+            const uploaded = await uploadPropertyVideo(file, (progress) => {
+                setQuickUploadState({ propertyId: targetProperty._id, progress });
+            });
+            const title = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").slice(0, 120);
+            const updatedRes = await appendFreshPropertyVideo(
+                targetProperty._id,
+                {
+                    url: uploaded.url,
+                    source: "upload",
+                    title
+                },
+                targetProperty.videos || []
+            );
+            if (updatedRes?.data) {
+                setProperties((prev) => prev.map((p) => (p._id === targetProperty._id ? updatedRes.data : p)));
+            } else {
+                await load();
+            }
+            addToast(`Video uploaded to "${targetProperty.title}"!`, "success");
+        } catch (err) {
+            addToast(errorMessage(err), "error");
+        } finally {
+            setQuickUploadState(null);
+            rowVideoTargetRef.current = null;
+        }
     }
     async function handlePhotoFiles(fileList) {
         const files = Array.from(fileList || []).filter(f => f.type.startsWith("image/"));
@@ -117,6 +165,17 @@ export default function AdminFreshProperties() {
             setForm(null); setEditing(null);
             setNotice("Fresh property saved successfully.");
             await load();
+        } catch (err) { setError(errorMessage(err)); }
+        finally { setBusy(false); }
+    }
+    async function toggleSold(property) {
+        const nextSold = !property.isSold;
+        const payload = { ...property, isSold: nextSold, ...(!nextSold ? { isPublished: true } : {}) };
+        setBusy(true); setError(""); setNotice("");
+        try {
+            await saveFreshProperty(property._id, payload);
+            setProperties(prev => prev.map(p => p._id === property._id ? { ...p, isSold: nextSold, ...(!nextSold ? { isPublished: true } : {}) } : p));
+            addToast(nextSold ? "Property stamped as SOLD OUT!" : "Property changed back to Active (Available)!", "success");
         } catch (err) { setError(errorMessage(err)); }
         finally { setBusy(false); }
     }
@@ -168,29 +227,31 @@ export default function AdminFreshProperties() {
             {/* Responsive Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-950 flex items-center gap-2">
-                        <Sparkles size={22} className="text-emerald-600 shrink-0" />
-                        <span>Fresh Properties (Direct Sale · No Auction)</span>
+                    <h1 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200/70 text-red-600 shrink-0">
+                            <Building2 size={17} />
+                        </div>
+                        <span>Direct Sale Properties (Fresh Listings)</span>
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-600">
-                        Properties created here appear <strong>only</strong> on the public <strong>Fresh Property</strong> list (<Link to="/admin/properties" className="font-semibold text-amber-700 hover:underline">manage Auction Properties separately →</Link>).
+                    <p className="mt-1 text-xs text-gray-500">
+                        Properties created here appear <strong>only</strong> on the public <strong>Fresh Property</strong> list (<Link to="/admin/properties" className="font-semibold text-red-600 hover:underline">manage Auction Properties →</Link>).
                     </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                     <Link
                         to="/fresh-properties"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-2xs"
                     >
-                        <span>View public page</span>
-                        <ExternalLink size={14} className="text-slate-400" />
+                        <span>View Public Page</span>
+                        <ExternalLink size={14} className="text-gray-400" />
                     </Link>
                     <button
                         disabled={busy}
                         onClick={() => openForm(null)}
-                        className="flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs sm:text-sm font-bold text-amber-400 hover:bg-slate-900 disabled:opacity-50 cursor-pointer"
+                        className="flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 cursor-pointer shadow-xs"
                     >
-                        <Plus size={16} />
-                        <span>Add Fresh Property</span>
+                        <Plus size={15} />
+                        <span>Add Direct Sale Listing</span>
                     </button>
                 </div>
             </div>
@@ -198,8 +259,29 @@ export default function AdminFreshProperties() {
             {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error} <button type="button" onClick={() => { setError(""); load(); }} className="underline">Retry loading listings</button></div>}
             {notice && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{notice}</p>}
 
-            {form && <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-7 shadow-xs">
-                <div className="mb-5 sm:mb-6 flex items-center justify-between"><h2 className="text-base sm:text-lg font-bold">{editing ? "Edit Fresh Property" : "Add Fresh Property"}</h2><button type="button" disabled={busy} onClick={() => setForm(null)} aria-label="Close form" className="rounded-lg p-1.5 hover:bg-slate-100"><X size={20} /></button></div>
+            <input
+                ref={rowVideoInputRef}
+                type="file"
+                accept={`${VIDEO_ACCEPT},.mp4,.mov,.webm,.m4v,.ogv`}
+                className="hidden"
+                onChange={handleQuickRowVideoUpload}
+            />
+
+            {form && <form onSubmit={submit} className="rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-4 sm:p-7 shadow-xs">
+                <div className="mb-5 sm:mb-6 flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-base sm:text-lg font-bold">{editing ? "Edit Fresh Property" : "Add Fresh Property"}</h2>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => videoSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 cursor-pointer"
+                        >
+                            <Film size={14} />
+                            <span>Upload / Manage Videos ({Array.isArray(form.videos) ? form.videos.length : 0})</span>
+                        </button>
+                        <button type="button" disabled={busy} onClick={() => setForm(null)} aria-label="Close form" className="rounded-lg p-1.5 hover:bg-slate-100"><X size={20} /></button>
+                    </div>
+                </div>
                 <fieldset disabled={busy} className="space-y-5">
                     <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
                         {field("title", "Property title", "text", true, 200)}
@@ -264,17 +346,19 @@ export default function AdminFreshProperties() {
                     </div>
 
                     {/* Property Videos (upload MP4/WebM/OGG/MOV from device or paste YouTube / Vimeo / video link) */}
-                    <PropertyVideoManager
-                        videos={form.videos || []}
-                        onChange={(updater) =>
-                            setForm((prev) => ({
-                                ...prev,
-                                videos: updater(Array.isArray(prev.videos) ? prev.videos : [])
-                            }))
-                        }
-                        onToast={(msg, type) => addToast(msg, type)}
-                        onUploadingChange={setVideoUploading}
-                    />
+                    <div ref={videoSectionRef}>
+                        <PropertyVideoManager
+                            videos={form.videos || []}
+                            onChange={(updater) =>
+                                setForm((prev) => ({
+                                    ...prev,
+                                    videos: updater(Array.isArray(prev.videos) ? prev.videos : [])
+                                }))
+                            }
+                            onToast={(msg, type) => addToast(msg, type)}
+                            onUploadingChange={setVideoUploading}
+                        />
+                    </div>
 
                     <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
                         <label className="block text-sm font-semibold text-slate-700">Contact phone for buyers <span className="font-normal text-slate-400">(optional)</span>
@@ -282,12 +366,15 @@ export default function AdminFreshProperties() {
                             <span className="text-xs font-normal text-slate-500">Shows “Call” and “WhatsApp” buttons. Enquiries always arrive in Buyer Inquiries.</span>
                         </label>
                     </div>
-                    <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={form.isPublished} onChange={event => setForm({ ...form, isPublished: event.target.checked })} className="h-4 w-4 accent-amber-600" />Publish on the Fresh Property page</label>
+                    <div className="flex flex-wrap items-center gap-6">
+                        <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={form.isPublished} onChange={event => setForm({ ...form, isPublished: event.target.checked })} className="h-4 w-4 accent-red-600" />Publish on the Fresh Property page</label>
+                        <label className="flex items-center gap-3 text-sm font-bold text-red-700"><input type="checkbox" checked={Boolean(form.isSold)} onChange={event => setForm({ ...form, isSold: event.target.checked })} className="h-4 w-4 accent-red-600" />Mark Property as SOLD (Show &ldquo;SOLD OUT&rdquo; Stamp)</label>
+                    </div>
                     <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
-                        <button type="submit" disabled={busy || videoUploading} className="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 disabled:opacity-50 cursor-pointer">
+                        <button type="submit" disabled={busy || videoUploading} className="rounded-lg bg-red-600 hover:bg-red-700 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer shadow-xs">
                             {busy ? "Saving..." : videoUploading ? "Uploading video..." : "Save Property"}
                         </button>
-                        <button type="button" className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold cursor-pointer" onClick={() => setForm(null)}>
+                        <button type="button" className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer" onClick={() => setForm(null)}>
                             Cancel
                         </button>
                     </div>
@@ -297,25 +384,79 @@ export default function AdminFreshProperties() {
             {loading ? (
                 <p role="status" className="p-6 text-slate-500">Loading fresh properties...</p>
             ) : !error && properties.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 sm:p-10 text-center text-slate-600">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-8 sm:p-10 text-center text-slate-600">
                     No fresh properties yet. Select Add Fresh Property to create your first listing.
                 </div>
             ) : (
                 <div className="space-y-3">
                     {properties.map(property => (
-                        <div key={property._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs">
+                        <div key={property._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-4 sm:p-5 shadow-2xs">
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <h2 className="font-bold text-slate-950">{property.title}</h2>
-                                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold ${property.isPublished ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600"}`}>
-                                        {property.isPublished ? "Published" : "Draft"}
+                                    {property.isSold ? (
+                                        <>
+                                            <span className="inline-block rounded-full bg-rose-600 px-2.5 py-0.5 text-[11px] font-black uppercase text-white shadow-xs">
+                                                ● SOLD OUT
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={busy}
+                                                onClick={() => toggleSold(property)}
+                                                className="rounded-full bg-emerald-600 hover:bg-emerald-700 px-2.5 py-0.5 text-[11px] font-black uppercase text-white shadow-xs transition cursor-pointer"
+                                                title="Remove SOLD stamp and make property Active again"
+                                            >
+                                                ✓ Activate
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold ${property.isPublished ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600"}`}>
+                                                {property.isPublished ? "● Active" : "Draft"}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={busy}
+                                                onClick={() => toggleSold(property)}
+                                                className="rounded-full bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-2.5 py-0.5 text-[11px] font-black uppercase transition cursor-pointer"
+                                                title="Click to stamp as SOLD OUT"
+                                            >
+                                                Mark Sold
+                                            </button>
+                                        </>
+                                    )}
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200/80 px-2.5 py-0.5 text-[11px] font-bold text-red-700">
+                                        <Film size={11} />
+                                        <span>{(property.videos || []).filter(v => v && v.url).length} Videos</span>
                                     </span>
                                 </div>
                                 <p className="mt-1 text-xs sm:text-sm text-slate-500">
                                     {property.propertyType || "Property"} · {property.city}, {property.state} · <strong className="text-slate-900">{formatINR(property.price)}</strong>
                                 </p>
                             </div>
-                            <div className="grid grid-cols-3 sm:flex items-center gap-2 shrink-0">
+                            <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
+                                <button
+                                    type="button"
+                                    disabled={busy || Boolean(quickUploadState)}
+                                    onClick={() => {
+                                        rowVideoTargetRef.current = property;
+                                        rowVideoInputRef.current?.click();
+                                    }}
+                                    className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs sm:text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+                                    title="Upload a walkthrough video directly to this Fresh Property"
+                                >
+                                    {quickUploadState?.propertyId === property._id ? (
+                                        <>
+                                            <Loader2 size={14} className="animate-spin" />
+                                            <span>{quickUploadState.progress}%</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Film size={14} />
+                                            <span>Upload Video</span>
+                                        </>
+                                    )}
+                                </button>
                                 <Link
                                     to="/admin/inquiries"
                                     title="Enquiries for fresh properties appear in Buyer Inquiries with a FRESH badge"

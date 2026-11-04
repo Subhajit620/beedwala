@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Film, Link2, Loader2, PlayCircle, Trash2, UploadCloud, X } from "lucide-react";
+import { Camera, Film, Link2, Loader2, PlayCircle, Trash2, UploadCloud, X } from "lucide-react";
 import { uploadPropertyVideo } from "../../services/adminService";
 import {
     VIDEO_ACCEPT,
@@ -12,9 +12,12 @@ import {
     getVideoThumbnail
 } from "../../utils/media";
 
+const ALLOWED_VIDEO_EXT_RE = /\.(mp4|webm|ogv|ogg|mov|m4v)$/i;
+
 /**
- * Admin video manager for the Property Gallery section.
- * - Upload video files (MP4/WebM/OGG/MOV, up to 200 MB) with live progress & cancel
+ * Admin video manager for Property & Fresh Property Gallery sections.
+ * - Upload video files (MP4/WebM/OGG/MOV/M4V, up to 200 MB) in chunked mode with live progress & cancel
+ * - Record walkthrough video directly from mobile camera
  * - Or paste a YouTube / Vimeo / direct .mp4 link
  * - Inline preview, editable caption, remove
  *
@@ -23,6 +26,7 @@ import {
  */
 export default function PropertyVideoManager({ videos = [], onChange, onToast, onUploadingChange }) {
     const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
     const [linkInput, setLinkInput] = useState("");
     const [linkError, setLinkError] = useState("");
     const [uploads, setUploads] = useState([]); // [{ id, name, progress, controller }]
@@ -38,6 +42,14 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
     const toast = (msg, type = "info") => onToast && onToast(msg, type);
     const slotsLeft = MAX_VIDEOS - videos.length - uploads.length;
 
+    const isSupportedVideoFile = (file) => {
+        if (!file) return false;
+        const allowedMimes = VIDEO_ACCEPT.split(",").map((m) => m.trim().toLowerCase());
+        const mime = String(file.type || "").toLowerCase();
+        if (mime && (allowedMimes.includes(mime) || mime.startsWith("video/"))) return true;
+        return ALLOWED_VIDEO_EXT_RE.test(String(file.name || ""));
+    };
+
     // ---------- File uploads ----------
     const uploadFiles = async (fileList) => {
         const files = Array.from(fileList || []);
@@ -49,7 +61,7 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
                 toast(`Maximum ${MAX_VIDEOS} videos per property.`, "error");
                 break;
             }
-            if (!file.type.startsWith("video/") || !VIDEO_ACCEPT.split(",").includes(file.type)) {
+            if (!isSupportedVideoFile(file)) {
                 toast(`Skipped ${file.name}: use MP4, WebM, OGG or MOV.`, "error");
                 continue;
             }
@@ -132,28 +144,29 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
     };
 
     return (
-        <div className="space-y-3 pt-3 border-t border-slate-100">
+        <div className="space-y-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <Film size={14} className="text-violet-600" />
-                        Property Videos
+                    <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                        <Film size={16} className="text-red-600" />
+                        Property Walkthrough Videos (Upload or Paste Link)
                     </span>
-                    <span className="text-[11px] text-slate-400">
-                        Walkthrough, drone or neighbourhood videos — upload a file or paste a link
+                    <span className="text-xs text-slate-500">
+                        Upload MP4/MOV/WebM videos directly from your phone or computer, record live camera video, or paste a YouTube/Vimeo link
                     </span>
                 </div>
-                <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                    <PlayCircle size={12} className="text-violet-600" />
+                <span className="rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-2xs">
+                    <PlayCircle size={13} className="text-red-600" />
                     {videos.length} / {MAX_VIDEOS} Videos
                 </span>
             </div>
 
-            <input ref={fileInputRef} type="file" accept={VIDEO_ACCEPT} multiple onChange={handleFileSelect} className="hidden" />
+            <input ref={fileInputRef} type="file" accept={`${VIDEO_ACCEPT},.mp4,.mov,.webm,.m4v,.ogv`} multiple onChange={handleFileSelect} className="hidden" />
+            <input ref={cameraInputRef} type="file" accept="video/*" capture="environment" onChange={handleFileSelect} className="hidden" />
 
-            {/* Upload dropzone + link input */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Upload dropzone + Camera capture + Link input */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                 <div
                     role="button"
                     tabIndex={0}
@@ -168,28 +181,39 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
                         setIsDragging(false);
                     }}
                     onDrop={handleDrop}
-                    className={`rounded-2xl border-2 border-dashed p-4 flex items-center gap-3 transition ${
+                    className={`lg:col-span-5 rounded-2xl border-2 border-dashed p-3.5 flex items-center gap-3 transition ${
                         slotsLeft <= 0
-                            ? "border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed"
+                            ? "border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed"
                             : isDragging
-                            ? "border-violet-500 bg-violet-50/70 ring-4 ring-violet-500/10 cursor-pointer"
-                            : "border-slate-300 bg-slate-50 hover:border-violet-400 hover:bg-violet-50/40 cursor-pointer"
+                            ? "border-red-500 bg-red-50/70 ring-4 ring-red-500/10 cursor-pointer"
+                            : "border-slate-300 bg-white hover:border-red-400 hover:bg-red-50/30 cursor-pointer"
                     }`}
                 >
-                    <div className="h-11 w-11 shrink-0 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center">
+                    <div className="h-11 w-11 shrink-0 rounded-xl bg-red-50 border border-red-200/80 text-red-600 flex items-center justify-center">
                         <UploadCloud size={22} />
                     </div>
                     <div className="min-w-0">
                         <span className="block text-xs font-bold text-slate-900">Upload Video from Device</span>
                         <span className="block text-[11px] text-slate-500">
-                            Drag & drop or click • MP4, WebM, MOV • up to {MAX_VIDEO_MB} MB
+                            Drag &amp; drop or click • MP4, MOV, WebM • up to {MAX_VIDEO_MB} MB
                         </span>
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-3 space-y-1.5">
+                <button
+                    type="button"
+                    disabled={slotsLeft <= 0}
+                    onClick={() => slotsLeft > 0 && cameraInputRef.current?.click()}
+                    className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/30 p-3 flex flex-row lg:flex-col items-center justify-center gap-2 text-slate-700 hover:text-red-700 transition cursor-pointer disabled:opacity-50"
+                    title="Record walkthrough video using mobile camera or select from gallery"
+                >
+                    <Camera size={20} className="text-red-600 shrink-0" />
+                    <span className="text-xs font-bold text-center leading-tight">Record / Camera</span>
+                </button>
+
+                <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-3 space-y-1.5">
                     <label htmlFor="property-video-link" className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                        <Link2 size={12} className="text-violet-600" />
+                        <Link2 size={12} className="text-red-600" />
                         Add YouTube / Vimeo / MP4 Link
                     </label>
                     <div className="flex gap-2">
@@ -203,22 +227,22 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
                             }}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
-                                    e.preventDefault(); // don't submit the whole property form
+                                    e.preventDefault();
                                     handleAddLink();
                                 }
                             }}
-                            placeholder="https://youtu.be/..."
+                            placeholder="https://youtu.be/... or .mp4 URL"
                             className={`flex-1 min-w-0 h-9 rounded-xl border bg-slate-50 px-3 text-xs font-semibold outline-none focus:bg-white transition ${
-                                linkError ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-violet-500"
+                                linkError ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-red-500"
                             }`}
                         />
                         <button
                             type="button"
                             onClick={handleAddLink}
                             disabled={!linkInput.trim()}
-                            className="h-9 shrink-0 rounded-xl bg-slate-950 px-3.5 text-xs font-bold text-violet-300 hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                            className="h-9 shrink-0 rounded-xl bg-red-600 px-3.5 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
                         >
-                            Add
+                            Add Link
                         </button>
                     </div>
                     {linkError && <p className="text-[11px] font-medium text-red-600">{linkError}</p>}
@@ -229,16 +253,16 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
             {uploads.length > 0 && (
                 <div className="space-y-2">
                     {uploads.map((u) => (
-                        <div key={u.id} className="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50/60 px-3 py-2">
-                            <Loader2 size={14} className="text-violet-600 animate-spin shrink-0" />
+                        <div key={u.id} className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-3.5 py-2.5">
+                            <Loader2 size={15} className="text-red-600 animate-spin shrink-0" />
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700">
-                                    <span className="truncate pr-2">{u.name}</span>
-                                    <span className="font-mono">{u.progress}%</span>
+                                <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
+                                    <span className="truncate pr-2">Uploading {u.name}…</span>
+                                    <span className="font-mono font-bold text-red-700">{u.progress}%</span>
                                 </div>
-                                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-violet-100">
+                                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-red-100">
                                     <div
-                                        className="h-full rounded-full bg-violet-600 transition-[width] duration-200"
+                                        className="h-full rounded-full bg-red-600 transition-[width] duration-200"
                                         style={{ width: `${u.progress}%` }}
                                     />
                                 </div>
@@ -246,10 +270,10 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
                             <button
                                 type="button"
                                 onClick={() => u.controller.abort()}
-                                className="h-6 w-6 shrink-0 rounded-lg text-slate-500 hover:bg-white hover:text-rose-600 flex items-center justify-center transition cursor-pointer"
+                                className="h-7 w-7 shrink-0 rounded-lg text-slate-500 hover:bg-white hover:text-rose-600 flex items-center justify-center transition cursor-pointer"
                                 title="Cancel upload"
                             >
-                                <X size={13} />
+                                <X size={14} />
                             </button>
                         </div>
                     ))}
@@ -258,7 +282,7 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
 
             {/* Video cards */}
             {videos.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     {videos.map((video, index) => {
                         const embedUrl = getEmbedUrl(video);
                         const thumb = getVideoThumbnail(video);
@@ -305,7 +329,7 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
                                         <span className="rounded-md bg-slate-950/80 backdrop-blur-md px-1.5 py-0.5 text-[10px] font-mono font-bold text-white border border-white/10">
                                             #{index + 1}
                                         </span>
-                                        <span className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                                             {video.source === "upload" ? <UploadCloud size={10} /> : <Link2 size={10} />}
                                             {VIDEO_SOURCE_LABELS[video.source] || "Video"}
                                         </span>
@@ -329,7 +353,7 @@ export default function PropertyVideoManager({ videos = [], onChange, onToast, o
                                         onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                                         maxLength={120}
                                         placeholder="Caption (e.g. Full walkthrough, Drone view)"
-                                        className="w-full h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-[11px] font-semibold outline-none focus:border-violet-500 focus:bg-white transition"
+                                        className="w-full h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-[11px] font-semibold outline-none focus:border-red-500 focus:bg-white transition"
                                     />
                                 </div>
                             </div>

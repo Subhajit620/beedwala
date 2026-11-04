@@ -139,7 +139,7 @@ export default function AdminAuditLogs() {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `baanknet_audit_trail_${Date.now()}.csv`);
+        link.setAttribute("download", `bidwallah_audit_trail_${Date.now()}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -149,7 +149,7 @@ export default function AdminAuditLogs() {
     const getActionBadgeColor = (type) => {
         switch (type?.toLowerCase()) {
             case "auth":
-                return "bg-purple-50 text-purple-700 border-purple-200";
+                return "bg-indigo-50 text-indigo-700 border-indigo-200";
             case "property":
                 return "bg-amber-50 text-amber-700 border-amber-200";
             case "inquiry":
@@ -168,12 +168,14 @@ export default function AdminAuditLogs() {
             {/* Page Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-                        <History className="text-amber-500" size={26} />
-                        <span>Security & Audit Logs Stream</span>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200/70 text-red-600 shrink-0">
+                            <History size={17} />
+                        </div>
+                        <span>Security &amp; Audit Logs Stream</span>
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500">
-                        Immutable chronological audit trail of all platform modifications, crawler runs, security logins, and SARFAESI compliance events.
+                    <p className="text-xs text-gray-500 mt-1">
+                        Chronological audit trail of platform modifications, crawler runs, security logins, and SARFAESI compliance events.
                     </p>
                 </div>
 
@@ -181,15 +183,15 @@ export default function AdminAuditLogs() {
                     <button
                         onClick={loadLogs}
                         disabled={loading}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-2xs transition cursor-pointer"
                     >
-                        <RefreshCw size={14} className={loading ? "animate-spin text-amber-600" : "text-slate-500"} />
+                        <RefreshCw size={14} className={loading ? "animate-spin text-red-600" : "text-gray-500"} />
                         <span>Refresh Trail</span>
                     </button>
 
                     <button
                         onClick={handleExportAuditTrail}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 shadow-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 shadow-xs transition cursor-pointer"
                     >
                         <Download size={14} />
                         <span>Export Audit Trail</span>
@@ -198,7 +200,7 @@ export default function AdminAuditLogs() {
             </div>
 
             {/* Category Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+            <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-3">
                 {[
                     { id: "all", label: "All Activities" },
                     { id: "property", label: "Property Notices" },
@@ -210,10 +212,10 @@ export default function AdminAuditLogs() {
                     <button
                         key={tab.id}
                         onClick={() => setSelectedCategory(tab.id)}
-                        className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                        className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer border ${
                             selectedCategory === tab.id
-                                ? "bg-slate-950 text-amber-400 shadow-xs"
-                                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                                ? "bg-red-600 text-white border-red-600"
+                                : "bg-white text-gray-600 hover:bg-gray-50 border-gray-200"
                         }`}
                     >
                         {tab.label}
@@ -222,27 +224,27 @@ export default function AdminAuditLogs() {
             </div>
 
             {/* Search Bar */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+            <div className="rounded-xl border border-gray-200/80 bg-white/55 backdrop-blur-md p-4 shadow-2xs">
                 <div className="relative">
-                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search logs by action, details, actor or resource ID..."
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/15 transition"
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50/70 pl-10 pr-3 text-xs font-medium text-gray-900 placeholder-gray-400 outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition"
                     />
                 </div>
             </div>
 
             {/* Audit Logs Table & Timeline */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+            <div className="overflow-hidden rounded-xl border border-gray-200/80 bg-white/55 backdrop-blur-md shadow-2xs">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                            <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                            <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                                 <th className="py-3.5 px-4 sm:px-6">Timestamp</th>
-                                <th className="py-3.5 px-4">Event & Action</th>
+                                <th className="py-3.5 px-4">Event &amp; Action</th>
                                 <th className="py-3.5 px-4">Category</th>
                                 <th className="py-3.5 px-4">Actor</th>
                                 <th className="py-3.5 px-4">Details / Resource</th>
@@ -252,13 +254,13 @@ export default function AdminAuditLogs() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="6" className="py-12 text-center text-slate-400 font-semibold">
+                                    <td colSpan="6" className="py-12 text-center text-slate-400 font-medium">
                                         Loading audit stream...
                                     </td>
                                 </tr>
                             ) : filteredLogs.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="py-12 text-center text-slate-400 font-semibold">
+                                    <td colSpan="6" className="py-12 text-center text-slate-400 font-medium">
                                         No audit entries match your criteria.
                                     </td>
                                 </tr>
@@ -273,13 +275,13 @@ export default function AdminAuditLogs() {
                                         <tr key={log._id} className="hover:bg-slate-50/60 transition">
                                             {/* Timestamp */}
                                             <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
-                                                <div className="font-bold text-slate-900">{timeStr}</div>
+                                                <div className="font-semibold text-slate-900 tabular-nums">{timeStr}</div>
                                                 <div className="text-[10px] text-slate-400 font-medium">{dateStr}</div>
                                             </td>
 
                                             {/* Event & Action */}
                                             <td className="py-3.5 px-4">
-                                                <div className="font-bold text-slate-900">{log.action}</div>
+                                                <div className="font-semibold text-slate-900">{log.action}</div>
                                                 {(log.resourceId || log.entityId) && (
                                                     <div className="text-[10px] font-mono text-slate-400">
                                                         ID: {log.resourceId || log.entityId}
@@ -290,7 +292,7 @@ export default function AdminAuditLogs() {
                                             {/* Category */}
                                             <td className="py-3.5 px-4 whitespace-nowrap">
                                                 <span
-                                                    className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getActionBadgeColor(
+                                                    className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${getActionBadgeColor(
                                                         log.resourceType || log.category
                                                     )}`}
                                                 >
@@ -300,8 +302,8 @@ export default function AdminAuditLogs() {
 
                                             {/* Actor */}
                                             <td className="py-3.5 px-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-1.5 font-bold text-slate-800">
-                                                    <UserCheck size={13} className="text-amber-500" />
+                                                <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                                                    <UserCheck size={13} className="text-blue-600" />
                                                     <span>{log.actor || log.performedBy || "Administrator"}</span>
                                                 </div>
                                             </td>
@@ -330,7 +332,7 @@ export default function AdminAuditLogs() {
                                                             resourceId: log.resourceId || log.entityId,
                                                             payload: log.payload || log.details
                                                         })}
-                                                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
                                                     >
                                                         <Code size={12} />
                                                         <span>Inspect</span>
@@ -350,39 +352,39 @@ export default function AdminAuditLogs() {
 
             {/* Payload Inspector Modal */}
             {selectedLogPayload && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fade-in">
-                    <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 text-slate-100 animate-scale-up">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+                    <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl p-6 text-slate-800 animate-scale-up">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div className="flex items-center gap-2">
-                                <Code size={18} className="text-amber-400" />
-                                <h3 className="font-bold text-sm text-white">Event Audit Payload</h3>
+                                <Code size={18} className="text-blue-600" />
+                                <h3 className="font-bold text-sm text-slate-900">Event Audit Payload</h3>
                             </div>
                             <button
                                 onClick={() => setSelectedLogPayload(null)}
-                                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
                             >
                                 <X size={18} />
                             </button>
                         </div>
 
-                        <div className="mt-4 space-y-3">
-                            <div className="text-xs text-slate-300">
-                                <span className="font-bold text-amber-400">Action:</span> {selectedLogPayload.action}
+                        <div className="mt-4 space-y-2.5">
+                            <div className="text-xs text-slate-600">
+                                <span className="font-semibold text-slate-900">Action:</span> {selectedLogPayload.action}
                             </div>
-                            <div className="text-xs text-slate-300">
-                                <span className="font-bold text-amber-400">Target:</span> {selectedLogPayload.resourceType} (
+                            <div className="text-xs text-slate-600">
+                                <span className="font-semibold text-slate-900">Target:</span> {selectedLogPayload.resourceType} (
                                 {selectedLogPayload.resourceId})
                             </div>
 
-                            <div className="mt-2 rounded-xl bg-slate-950 p-3 border border-slate-800 font-mono text-[11px] text-emerald-400 overflow-x-auto max-h-60">
+                            <div className="mt-2 rounded-xl bg-slate-50 p-3.5 border border-slate-200 font-mono text-[11px] text-slate-800 overflow-x-auto max-h-60">
                                 <pre>{JSON.stringify(selectedLogPayload.payload, null, 2)}</pre>
                             </div>
                         </div>
 
-                        <div className="mt-6 flex justify-end">
+                        <div className="mt-5 flex justify-end">
                             <button
                                 onClick={() => setSelectedLogPayload(null)}
-                                className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700 transition"
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer"
                             >
                                 Close Inspector
                             </button>

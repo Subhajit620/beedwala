@@ -2,23 +2,27 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
     ShieldCheck,
-    Landmark,
     ArrowRight,
     AlertCircle,
     RotateCcw,
-    Sparkles,
     Building2,
     TrendingDown,
     Award,
-    Flame,
     CheckCircle2,
     XCircle,
     Bell,
     Check,
-    Compass,
     MapPin,
     Film
 } from "lucide-react";
+import {
+    DirectPropertyEmblem,
+    BankAuctionEmblem,
+    VerifiedSealIcon,
+    PropertyFinderIcon,
+    MarketActivityIcon
+} from "../components/BrandIcons";
+import { BankLogo } from "../components/BankLogos";
 
 import { fetchProperties, fetchPropertyStats } from "../services/propertyService";
 import { fetchFreshProperties } from "../services/freshPropertyService";
@@ -29,7 +33,6 @@ import PropertyGrid from "../components/PropertyGrid";
 import BankPartnersMarquee from "../components/BankPartnersMarquee";
 import AuctionRoadmap from "../components/AuctionRoadmap";
 import FaqSection from "../components/FaqSection";
-import EmiCalculator from "../components/EmiCalculator";
 import UserWelcomeModal from "../components/UserWelcomeModal";
 import { PropertyLockWall } from "../components/VisitorLoginModal";
 import { PropertyGridSkeleton } from "../components/Loading";
@@ -194,21 +197,21 @@ export default function Home() {
             <BankPartnersMarquee />
 
             {/* 2.5 Interactive Dual-Path Buyer Showcase: Fresh Property (Direct Sale) vs Bank Auction */}
-            <section className="py-10 sm:py-14 bg-slate-950 text-white border-b border-slate-800 relative overflow-hidden">
-                <div className="pointer-events-none absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl animate-orb-drift" />
-                <div className="pointer-events-none absolute -bottom-24 right-1/4 h-72 w-72 rounded-full bg-amber-500/15 blur-3xl animate-orb-drift" />
+            <section className="py-10 sm:py-14 bg-gradient-to-b from-gray-50 via-white to-gray-50/80 text-gray-900 border-b border-gray-200/80 relative overflow-hidden">
+                <div className="pointer-events-none absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-red-100/50 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 right-1/4 h-72 w-72 rounded-full bg-gray-200/60 blur-3xl" />
 
                 <div className="relative mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 sm:mb-8">
                         <div>
-                            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 px-3.5 py-1 text-xs font-bold text-emerald-300 mb-2">
-                                <Sparkles size={13} className="text-emerald-400" />
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-200/80 px-3.5 py-1 text-xs font-bold text-red-700 mb-2 shadow-2xs">
+                                <VerifiedSealIcon size={13} className="text-red-600" />
                                 <span>Two Transparent Ways to Buy</span>
                             </div>
-                            <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-white tracking-tight">
+                            <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
                                 Fresh Direct Properties vs. Bank Auctions
                             </h2>
-                            <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-2xl">
+                            <p className="mt-1 text-xs sm:text-sm text-gray-600 max-w-2xl">
                                 Buy directly from Bidwallah Admin at a fixed price with zero auction formalities, or bid on official SARFAESI bank notices at 20%–35% below market valuation.
                             </p>
                         </div>
@@ -216,9 +219,9 @@ export default function Home() {
                         <button
                             type="button"
                             onClick={() => setShowWelcomeModal(true)}
-                            className="inline-flex items-center gap-2 self-start md:self-auto rounded-2xl border border-amber-400/50 bg-amber-500/15 hover:bg-amber-500/25 px-4 py-2.5 text-xs font-black text-amber-300 transition cursor-pointer animate-pulse-glow"
+                            className="inline-flex items-center gap-2 self-start md:self-auto rounded-xl border border-gray-200 bg-white hover:bg-red-50 hover:border-red-200 px-4 py-2.5 text-xs font-bold text-gray-800 hover:text-red-700 shadow-2xs transition cursor-pointer"
                         >
-                            <Compass size={15} className="text-amber-400" />
+                            <PropertyFinderIcon size={15} className="text-red-600" />
                             <span>Open Smart Property Finder</span>
                         </button>
                     </div>
@@ -227,39 +230,49 @@ export default function Home() {
                         {/* Card 1: Fresh Property (Direct from Admin · No Auction) */}
                         <Link
                             to="/fresh-properties"
-                            className="group relative flex flex-col justify-between rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-900 p-6 sm:p-7 hover:border-emerald-400 transition-all duration-300 hover:-translate-y-1 animate-pulse-emerald"
+                            className="group relative flex flex-col justify-between rounded-2xl border border-gray-200/90 bg-white/80 backdrop-blur-md p-6 sm:p-7 shadow-xs hover:shadow-lg hover:border-emerald-300 transition-all duration-200 hover:-translate-y-0.5"
                         >
                             <div>
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-slate-950 shadow-lg group-hover:scale-110 transition">
-                                        <Sparkles size={24} />
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-gray-200 bg-gray-100 text-gray-800 shadow-2xs group-hover:border-emerald-600 group-hover:bg-emerald-600 group-hover:text-white group-hover:scale-110 group-hover:shadow-md group-hover:shadow-emerald-600/25 transition-all duration-300">
+                                            <DirectPropertyEmblem className="h-6 w-6" />
+                                        </div>
+                                        <div className="hidden xs:block">
+                                            <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:text-emerald-600 transition-colors">
+                                                Channel 01
+                                            </span>
+                                            <span className="block text-xs font-bold text-gray-800">
+                                                Admin Direct Desk
+                                            </span>
+                                        </div>
                                     </div>
-                                    <span className="rounded-full bg-emerald-500/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-emerald-300">
+                                    <span className="rounded-full bg-gray-100 border border-gray-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-gray-700 group-hover:bg-emerald-50 group-hover:border-emerald-200 group-hover:text-emerald-700 transition-colors">
                                         No Auction • Direct Admin Sale
                                     </span>
                                 </div>
 
-                                <h3 className="mt-5 text-xl sm:text-2xl font-black text-white group-hover:text-emerald-300 transition">
+                                <h3 className="mt-5 text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-emerald-700 transition">
                                     Fresh Properties ({freshProperties.length} Available)
                                 </h3>
-                                <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
                                     Exclusively uploaded by the Bidwallah Admin. Fixed asking price, no e-bidding, and no EMD deposit — view photos, walkthrough videos &amp; GPS map location, then click <strong>&ldquo;I&apos;m Interested&rdquo;</strong> to connect directly with Admin.
                                 </p>
 
-                                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-emerald-300">
-                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-emerald-500/25 px-3 py-1">
-                                        <ShieldCheck size={13} /> Admin Verified Only
+                                <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-gray-700">
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-gray-100/90 border border-gray-200/80 px-3 py-1">
+                                        <ShieldCheck size={13} className="text-emerald-600" /> Admin Verified Only
                                     </span>
-                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-emerald-500/25 px-3 py-1">
-                                        <Film size={13} /> HD Videos &amp; Photos
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-gray-100/90 border border-gray-200/80 px-3 py-1">
+                                        <Film size={13} className="text-gray-600" /> HD Videos &amp; Photos
                                     </span>
-                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-emerald-500/25 px-3 py-1">
-                                        <MapPin size={13} /> Exact GPS Pin
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-gray-100/90 border border-gray-200/80 px-3 py-1">
+                                        <MapPin size={13} className="text-emerald-600" /> Exact GPS Pin
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="mt-6 pt-4 border-t border-emerald-500/20 flex items-center justify-between text-xs sm:text-sm font-black text-emerald-400">
+                            <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs sm:text-sm font-bold text-gray-900 group-hover:text-emerald-700 transition">
                                 <span>Browse All Fresh Properties (No Auction)</span>
                                 <ArrowRight size={16} className="group-hover:translate-x-1.5 transition" />
                             </div>
@@ -268,39 +281,49 @@ export default function Home() {
                         {/* Card 2: Bank Auction Properties (SARFAESI Notices) */}
                         <Link
                             to="/properties"
-                            className="group relative flex flex-col justify-between rounded-3xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-950/50 via-slate-900 to-slate-900 p-6 sm:p-7 hover:border-amber-400 transition-all duration-300 hover:-translate-y-1 animate-pulse-glow"
+                            className="group relative flex flex-col justify-between rounded-2xl border border-red-200/80 bg-gradient-to-br from-red-50/45 via-white/85 to-gray-50/60 backdrop-blur-md p-6 sm:p-7 shadow-xs hover:shadow-lg hover:border-red-300 transition-all duration-200 hover:-translate-y-0.5"
                         >
                             <div>
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-lg group-hover:scale-110 transition">
-                                        <Landmark size={24} />
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 shadow-2xs group-hover:border-red-600 group-hover:bg-red-600 group-hover:text-white group-hover:scale-110 group-hover:shadow-md group-hover:shadow-red-600/25 transition-all duration-300">
+                                            <BankAuctionEmblem className="h-6 w-6" />
+                                        </div>
+                                        <div className="hidden xs:block">
+                                            <span className="block text-[10px] font-bold uppercase tracking-wider text-red-600/80">
+                                                Channel 02
+                                            </span>
+                                            <span className="block text-xs font-bold text-gray-800">
+                                                Institutional Recovery
+                                            </span>
+                                        </div>
                                     </div>
-                                    <span className="rounded-full bg-amber-500/20 border border-amber-400/40 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-300">
+                                    <span className="rounded-full bg-red-50 border border-red-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-red-700">
                                         SARFAESI Bank Notices
                                     </span>
                                 </div>
 
-                                <h3 className="mt-5 text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition">
+                                <h3 className="mt-5 text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-red-600 transition">
                                     Bank Auction Properties ({stats.totalProperties.toLocaleString("en-IN")}+ Listings)
                                 </h3>
-                                <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                                    Official institutional auction notices from State Bank of India, PNB, Indian Bank &amp; 13+ partner banks. Acquire residential, commercial, and land assets at <strong>20% to 35% below market valuation</strong> with 0% brokerage.
+                                <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                    Official institutional auction notices from State Bank of India, HDFC Bank, PNB, Indian Bank &amp; 13+ partner banks. Acquire residential, commercial, and land assets at <strong>20% to 35% below market valuation</strong> with 0% brokerage.
                                 </p>
 
-                                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-amber-300">
-                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-amber-500/25 px-3 py-1">
-                                        <TrendingDown size={13} /> 20%–35% Below Market
+                                <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-gray-700">
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-white border border-red-200/70 px-3 py-1">
+                                        <TrendingDown size={13} className="text-red-600" /> 20%–35% Below Market
                                     </span>
-                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-amber-500/25 px-3 py-1">
-                                        <ShieldCheck size={13} /> Clean Sale Certificate
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-white border border-gray-200/90 px-3 py-1">
+                                        <ShieldCheck size={13} className="text-red-600" /> Clean Sale Certificate
                                     </span>
-                                    <span className="inline-flex items-center gap-1 rounded-xl bg-slate-950/70 border border-amber-500/25 px-3 py-1">
-                                        <Building2 size={13} /> 0% Brokerage
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-white border border-gray-200/90 px-3 py-1">
+                                        <Building2 size={13} className="text-gray-600" /> 0% Brokerage
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="mt-6 pt-4 border-t border-amber-500/20 flex items-center justify-between text-xs sm:text-sm font-black text-amber-400">
+                            <div className="mt-6 pt-4 border-t border-red-100/80 flex items-center justify-between text-xs sm:text-sm font-bold text-red-600 group-hover:text-red-700 transition">
                                 <span>Explore Bank Auction Directory</span>
                                 <ArrowRight size={16} className="group-hover:translate-x-1.5 transition" />
                             </div>
@@ -316,7 +339,7 @@ export default function Home() {
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 sm:mb-8">
                             <div>
                                 <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3.5 py-1 text-xs font-bold text-emerald-800 mb-2 shadow-xs">
-                                    <Sparkles size={13} className="text-emerald-600" />
+                                    <VerifiedSealIcon size={13} className="text-emerald-600" />
                                     <span>Direct from Bidwallah Admin • No Auction</span>
                                 </div>
                                 <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
@@ -408,7 +431,7 @@ export default function Home() {
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 sm:mb-8">
                         <div>
                             <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/80 px-3.5 py-1 text-xs font-bold text-amber-900 mb-2 shadow-xs">
-                                <Flame size={13} className="text-amber-600" />
+                                <MarketActivityIcon size={13} className="text-amber-600" />
                                 <span>Verified Bank Inventories</span>
                             </div>
                             <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
@@ -556,7 +579,7 @@ export default function Home() {
 
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
-                                    <Sparkles size={14} className="text-amber-500" />
+                                    <VerifiedSealIcon size={14} className="text-amber-600" />
                                     <span>Bidwallah Verified Deals</span>
                                 </span>
                                 <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-amber-400 shadow-xs">
@@ -592,77 +615,237 @@ export default function Home() {
                 <AuctionRoadmap />
             </div>
 
-            {/* 6. Embedded Financial Loan & EMI Planner */}
-            <section className="py-12 sm:py-20 bg-slate-50 border-t border-slate-200/80">
-                <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-                    <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-                        <span className="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200/70 px-3.5 py-1 rounded-full mb-3 inline-block">
-                            Financing Assistant
-                        </span>
-                        <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
-                            Interactive Bank Auction EMI Calculator
-                        </h2>
-                        <p className="mt-2 text-xs sm:text-base text-slate-500">
-                            Estimate your monthly loan payments and interest component based on property reserve price.
-                        </p>
-                    </div>
+            {/* 7. Why Bidwallah / Institutional Pillars (Upgraded 3D Glassmorphic Showcase) */}
+            <section className="py-14 sm:py-22 bg-gradient-to-b from-gray-50/80 via-white to-gray-100/70 border-t border-gray-200/80 relative overflow-hidden">
+                {/* Ambient Background Lighting */}
+                <div className="pointer-events-none absolute -top-24 left-1/4 h-72 w-96 rounded-full bg-red-100/45 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 right-1/4 h-72 w-96 rounded-full bg-gray-200/60 blur-3xl" />
 
-                    <div className="max-w-4xl mx-auto">
-                        <EmiCalculator defaultPrice={2500000} />
-                    </div>
-                </div>
-            </section>
-
-            {/* 7. Why Bidwallah / Institutional Pillars */}
-            <section className="py-12 sm:py-20 bg-white border-t border-slate-200/80">
-                <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-                    <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-                        <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
-                            The Bidwallah Advantage
-                        </span>
-                        <h2 className="mt-2 text-2xl xs:text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                            Why Invest in Bank Auctions?
-                        </h2>
-                        <p className="mt-2.5 sm:mt-3 text-xs sm:text-base text-slate-500 leading-relaxed">
-                            Acquire prime real estate at transparent reserve prices directly from authorized banking institutions.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                        <div className="group rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-slate-50/50 p-5 sm:p-8 hover:border-amber-400 hover:bg-white hover:shadow-xl transition duration-300">
-                            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20 mb-5 sm:mb-6 group-hover:scale-105 transition">
-                                <Landmark size={24} />
+                <div className="relative mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+                    {/* Section Header & Statutory Benchmark Bar */}
+                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 sm:mb-12">
+                        <div className="max-w-2xl">
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-200/80 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-red-700 mb-2.5 shadow-2xs">
+                                <VerifiedSealIcon size={13} className="text-red-600" />
+                                <span>The Bidwallah Institutional Advantage</span>
                             </div>
-                            <h3 className="text-base sm:text-lg font-black text-slate-900">
-                                Direct Bank Notices
-                            </h3>
-                            <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                                Direct property notices from State Bank of India, Indian Bank, PNB, and leading institutions without intermediary brokerages.
+                            <h2 className="text-2xl xs:text-3xl sm:text-4xl font-black text-gray-950 tracking-tight">
+                                Why Invest in Bank Auctions?
+                            </h2>
+                            <p className="mt-2.5 text-xs sm:text-base text-gray-600 leading-relaxed">
+                                Acquire residential, commercial, and land assets directly from nationalized &amp; private sector banks at distressed reserve valuations with statutory legal protection.
                             </p>
                         </div>
 
-                        <div className="group rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-slate-50/50 p-5 sm:p-8 hover:border-emerald-300 hover:bg-white hover:shadow-xl transition duration-300">
-                            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 mb-5 sm:mb-6 group-hover:scale-105 transition">
-                                <ShieldCheck size={24} />
+                        {/* Quick Statutory Proof Strip */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2.5 shrink-0">
+                            {[
+                                { value: "20%–35%", label: "Below Market Rate" },
+                                { value: "0% Fee", label: "Zero Brokerage" },
+                                { value: "Rule 9(6)", label: "Sale Certificate" },
+                                { value: "100% Safe", label: "Refundable EMD" }
+                            ].map((stat, idx) => (
+                                <div
+                                    key={idx}
+                                    className="rounded-xl border border-gray-200/90 bg-white/80 backdrop-blur-md px-3.5 py-2.5 shadow-2xs text-center"
+                                >
+                                    <span className="block text-sm sm:text-base font-black text-red-600 leading-tight">
+                                        {stat.value}
+                                    </span>
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mt-0.5">
+                                        {stat.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 4-Pillar 3D Beveled Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+                        {/* Pillar 01: Direct Bank Notices (Crimson Red Hover Theme) */}
+                        <div className="group relative flex flex-col justify-between rounded-2xl border border-gray-200/90 border-b-4 border-b-red-600/80 bg-white/85 backdrop-blur-md p-6 shadow-[0_12px_28px_-12px_rgba(15,23,42,0.14),inset_0_1px_0_rgba(255,255,255,0.95)] hover:border-red-300 hover:shadow-[0_22px_40px_-14px_rgba(220,38,38,0.2)] hover:-translate-y-1.5 transition-all duration-300">
+                            <div>
+                                <div className="flex items-center justify-between gap-2 mb-5">
+                                    <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-white text-red-600 shadow-[0_8px_16px_-6px_rgba(220,38,38,0.2)] group-hover:from-red-600 group-hover:to-rose-700 group-hover:border-red-600 group-hover:text-white group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-lg group-hover:shadow-red-600/30 transition-all duration-300">
+                                        <BankAuctionEmblem className="h-6 w-6 transition-colors duration-300" />
+                                    </div>
+                                    <span className="rounded-full bg-red-50 border border-red-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-red-700 group-hover:bg-red-600 group-hover:text-white group-hover:border-red-600 transition-colors duration-300">
+                                        01 • Direct Bank
+                                    </span>
+                                </div>
+
+                                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 group-hover:text-red-600 transition-colors duration-300">
+                                    Direct Bank Notices
+                                </h3>
+                                <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                    Official property notices sourced directly from <strong>SBI, HDFC Bank, PNB, Indian Bank &amp; 13+ banks</strong> with 0% middleman commission.
+                                </p>
+
+                                {/* Mini Partner Bank Logos Strip */}
+                                <div className="mt-4 pt-3.5 border-t border-gray-100 flex items-center justify-between">
+                                    <div className="flex -space-x-1.5">
+                                        {[
+                                            "State Bank of India",
+                                            "HDFC Bank",
+                                            "Punjab National Bank",
+                                            "Bank of Baroda",
+                                            "ICICI Bank"
+                                        ].map((bankName) => (
+                                            <div
+                                                key={bankName}
+                                                title={bankName}
+                                                className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white p-0.5 shadow-2xs transition-transform duration-300 group-hover:scale-105 group-hover:border-red-200"
+                                            >
+                                                <BankLogo name={bankName} className="h-5 w-5" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <span className="text-[11px] font-bold text-gray-500 group-hover:text-red-700 transition-colors">
+                                        13+ Partner Banks
+                                    </span>
+                                </div>
                             </div>
-                            <h3 className="text-base sm:text-lg font-black text-slate-900">
-                                SARFAESI Clear Title
-                            </h3>
-                            <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                                Governed strictly under the SARFAESI Act, 2002 with statutory sale certificate transfer on successful bid completion.
-                            </p>
+
+                            <Link
+                                to="/properties"
+                                className="mt-5 pt-3 border-t border-gray-100 inline-flex items-center justify-between text-xs font-bold text-gray-700 group-hover:text-red-600 transition-colors"
+                            >
+                                <span>Browse Bank Notices</span>
+                                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
+                            </Link>
                         </div>
 
-                        <div className="group rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-slate-50/50 p-5 sm:p-8 hover:border-amber-400 hover:bg-white hover:shadow-xl transition duration-300">
-                            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-slate-950 text-amber-400 border border-amber-500/30 shadow-md mb-5 sm:mb-6 group-hover:scale-105 transition">
-                                <TrendingDown size={24} />
+                        {/* Pillar 02: SARFAESI Clear Title (Emerald Statutory Hover Theme) */}
+                        <div className="group relative flex flex-col justify-between rounded-2xl border border-gray-200/90 border-b-4 border-b-emerald-600/80 bg-white/85 backdrop-blur-md p-6 shadow-[0_12px_28px_-12px_rgba(15,23,42,0.14),inset_0_1px_0_rgba(255,255,255,0.95)] hover:border-emerald-300 hover:shadow-[0_22px_40px_-14px_rgba(5,150,105,0.2)] hover:-translate-y-1.5 transition-all duration-300">
+                            <div>
+                                <div className="flex items-center justify-between gap-2 mb-5">
+                                    <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white text-emerald-600 shadow-[0_8px_16px_-6px_rgba(5,150,105,0.2)] group-hover:from-emerald-600 group-hover:to-teal-700 group-hover:border-emerald-600 group-hover:text-white group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-lg group-hover:shadow-emerald-600/30 transition-all duration-300">
+                                        <ShieldCheck size={24} className="transition-colors duration-300" />
+                                    </div>
+                                    <span className="rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-colors duration-300">
+                                        02 • Legal Title
+                                    </span>
+                                </div>
+
+                                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 group-hover:text-emerald-700 transition-colors duration-300">
+                                    SARFAESI Clear Title
+                                </h3>
+                                <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                    Governed strictly under the <strong>SARFAESI Act, 2002</strong> with a statutory <strong>Rule 9(6) Sale Certificate</strong> signed by the bank&apos;s Authorized Officer.
+                                </p>
+
+                                {/* Verification Points */}
+                                <div className="mt-4 pt-3.5 border-t border-gray-100 space-y-1.5 text-[11px] font-semibold text-gray-700">
+                                    <div className="flex items-center gap-1.5">
+                                        <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                                        <span>Authorized Bank Officer Transfer</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                                        <span>Prior Loan Encumbrances Cleared</span>
+                                    </div>
+                                </div>
                             </div>
-                            <h3 className="text-base sm:text-lg font-black text-slate-900">
-                                Distressed Asset Discounts
-                            </h3>
-                            <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                                Verified valuation benchmarks with reserve prices typically 15% to 35% below surrounding open-market rates.
-                            </p>
+
+                            <Link
+                                to="/about"
+                                className="mt-5 pt-3 border-t border-gray-100 inline-flex items-center justify-between text-xs font-bold text-gray-700 group-hover:text-emerald-700 transition-colors"
+                            >
+                                <span>Read Legal Framework</span>
+                                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
+                            </Link>
+                        </div>
+
+                        {/* Pillar 03: Distressed Asset Discounts (Amber-Orange Valuation Hover Theme) */}
+                        <div className="group relative flex flex-col justify-between rounded-2xl border border-gray-200/90 border-b-4 border-b-amber-500/80 bg-white/85 backdrop-blur-md p-6 shadow-[0_12px_28px_-12px_rgba(15,23,42,0.14),inset_0_1px_0_rgba(255,255,255,0.95)] hover:border-amber-300 hover:shadow-[0_22px_40px_-14px_rgba(245,158,11,0.22)] hover:-translate-y-1.5 transition-all duration-300">
+                            <div>
+                                <div className="flex items-center justify-between gap-2 mb-5">
+                                    <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white text-amber-600 shadow-[0_8px_16px_-6px_rgba(245,158,11,0.22)] group-hover:from-amber-500 group-hover:to-orange-600 group-hover:border-amber-500 group-hover:text-white group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-lg group-hover:shadow-amber-500/30 transition-all duration-300">
+                                        <TrendingDown size={24} className="transition-colors duration-300" />
+                                    </div>
+                                    <span className="rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-800 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500 transition-colors duration-300">
+                                        03 • High Equity
+                                    </span>
+                                </div>
+
+                                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
+                                    Distressed Asset Discounts
+                                </h3>
+                                <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                    Bank reserve prices are set to recover outstanding dues — typically <strong>20% to 35% below</strong> surrounding retail market rates.
+                                </p>
+
+                                {/* Visual Price Benchmark Comparison */}
+                                <div className="mt-4 pt-3.5 border-t border-gray-100 space-y-2">
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                                            <span>Open Market Rate</span>
+                                            <span>100%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full rounded-full bg-gray-200">
+                                            <div className="h-1.5 w-full rounded-full bg-gray-400" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-amber-700 mb-1">
+                                            <span>Bank Reserve Price</span>
+                                            <span>65% – 80%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full rounded-full bg-amber-100">
+                                            <div className="h-1.5 w-[72%] rounded-full bg-amber-500 group-hover:bg-orange-600 transition-colors" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Link
+                                to="/search"
+                                className="mt-5 pt-3 border-t border-gray-100 inline-flex items-center justify-between text-xs font-bold text-gray-700 group-hover:text-amber-700 transition-colors"
+                            >
+                                <span>Compare Reserve Prices</span>
+                                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
+                            </Link>
+                        </div>
+
+                        {/* Pillar 04: Refundable EMD & Advisory Support (Royal Blue Hover Theme) */}
+                        <div className="group relative flex flex-col justify-between rounded-2xl border border-gray-200/90 border-b-4 border-b-blue-600/80 bg-white/85 backdrop-blur-md p-6 shadow-[0_12px_28px_-12px_rgba(15,23,42,0.14),inset_0_1px_0_rgba(255,255,255,0.95)] hover:border-blue-300 hover:shadow-[0_22px_40px_-14px_rgba(37,99,235,0.2)] hover:-translate-y-1.5 transition-all duration-300">
+                            <div>
+                                <div className="flex items-center justify-between gap-2 mb-5">
+                                    <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white text-blue-600 shadow-[0_8px_16px_-6px_rgba(37,99,235,0.2)] group-hover:from-blue-600 group-hover:to-indigo-700 group-hover:border-blue-600 group-hover:text-white group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-lg group-hover:shadow-blue-600/30 transition-all duration-300">
+                                        <DirectPropertyEmblem className="h-6 w-6 transition-colors duration-300" />
+                                    </div>
+                                    <span className="rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-blue-700 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors duration-300">
+                                        04 • Full Support
+                                    </span>
+                                </div>
+
+                                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 group-hover:text-blue-700 transition-colors duration-300">
+                                    Refundable EMD &amp; Desk Support
+                                </h3>
+                                <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                    10% Earnest Money Deposit is <strong>100% refundable within 48 hours</strong> if outbid, backed by end-to-end site visit &amp; tender assistance.
+                                </p>
+
+                                {/* Support Highlights */}
+                                <div className="mt-4 pt-3.5 border-t border-gray-100 space-y-1.5 text-[11px] font-semibold text-gray-700">
+                                    <div className="flex items-center gap-1.5">
+                                        <CheckCircle2 size={13} className="text-blue-600 shrink-0" />
+                                        <span>100% Bank-Escrow EMD Refund</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <CheckCircle2 size={13} className="text-blue-600 shrink-0" />
+                                        <span>Site Inspection &amp; Handover Help</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Link
+                                to="/contact"
+                                className="mt-5 pt-3 border-t border-gray-100 inline-flex items-center justify-between text-xs font-bold text-gray-700 group-hover:text-blue-700 transition-colors"
+                            >
+                                <span>Connect with Advisory Desk</span>
+                                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -755,12 +938,12 @@ export default function Home() {
                         >
                             Browse All Properties
                         </Link>
-                        <Link
-                            to="/contact"
+                        <a
+                            href="tel:+917439409340"
                             className="w-full sm:w-auto rounded-2xl border border-amber-400/40 bg-slate-900/60 hover:bg-slate-800 px-6 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-amber-300 backdrop-blur-md transition"
                         >
-                            Contact Banking Desk
-                        </Link>
+                            Call Desk: +91 74394 09340
+                        </a>
                     </div>
                 </div>
             </section>

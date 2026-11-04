@@ -47,6 +47,19 @@ export async function saveFreshProperty(id, data) {
     return result;
 }
 
+export async function appendFreshPropertyVideo(id, videoEntry, existingVideos = []) {
+    const videosToAppend = Array.isArray(videoEntry) ? videoEntry : [videoEntry];
+    try {
+        return (await api.post(`/fresh-properties/${id}/videos`, { videos: videosToAppend })).data;
+    } catch (err) {
+        if (err?.response?.status === 404) {
+            const merged = [...(Array.isArray(existingVideos) ? existingVideos : []), ...videosToAppend].slice(0, 10);
+            return (await api.put(`/admin/fresh-properties/${id}`, { videos: merged })).data;
+        }
+        throw err;
+    }
+}
+
 export async function deleteFreshProperty(id) {
     return (await api.delete(`/admin/fresh-properties/${id}`)).data;
 }

@@ -70,7 +70,8 @@ export default function FreshEnquiryModal({ property, onClose }) {
         window.open(`https://wa.me/?text=${text}`, "_blank");
     };
 
-    const contactDigits = (property.contactPhone || "").replace(/\D/g, "");
+    const rawPhone = (property.contactPhone || "7439409340").trim();
+    const contactDigits = rawPhone.replace(/\D/g, "");
     const waNumber = contactDigits.length === 10 ? `91${contactDigits}` : contactDigits;
 
     return (
@@ -146,8 +147,8 @@ export default function FreshEnquiryModal({ property, onClose }) {
 
                         {contactDigits.length >= 8 && (
                             <div className="grid grid-cols-2 gap-2.5 border-t border-slate-100 pt-3.5">
-                                <a href={`tel:${property.contactPhone.replace(/\s/g, "")}`} className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:border-amber-400">
-                                    <Phone size={14} /> Call now
+                                <a href={`tel:${rawPhone.replace(/\s/g, "")}`} className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:border-amber-400">
+                                    <Phone size={14} /> {rawPhone}
                                 </a>
                                 <a
                                     href={`https://wa.me/${waNumber}?text=${encodeURIComponent(form.message)}`}

@@ -3,20 +3,20 @@ import { Outlet, NavLink, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
     Mail,
-    Sparkles,
+    Building,
     Building2,
-    PlusCircle
+    Plus
 } from "lucide-react";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
 import AdminCommandPalette from "./AdminCommandPalette";
 import { fetchInquiries } from "../../services/adminService";
 
-const DEFAULT_SIDEBAR_WIDTH = 288;
-const MIN_SIDEBAR_WIDTH = 210;
-const MAX_SIDEBAR_WIDTH = 440;
-const COLLAPSED_SIDEBAR_WIDTH = 76;
-const SNAP_COLLAPSE_THRESHOLD = 145;
+const DEFAULT_SIDEBAR_WIDTH = 256;
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 380;
+const COLLAPSED_SIDEBAR_WIDTH = 68;
+const SNAP_COLLAPSE_THRESHOLD = 140;
 
 export default function AdminLayout() {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -44,7 +44,6 @@ export default function AdminLayout() {
 
     const [isResizing, setIsResizing] = useState(false);
 
-    // Persist width & collapsed state
     useEffect(() => {
         try {
             localStorage.setItem("bw_admin_sidebar_width", String(sidebarWidth));
@@ -62,7 +61,6 @@ export default function AdminLayout() {
         }
     }, []);
 
-    // Global mouse / touch listeners while dragging the sidebar edge
     useEffect(() => {
         if (!isResizing) return;
 
@@ -106,7 +104,6 @@ export default function AdminLayout() {
 
     const effectiveSidebarWidth = isCollapsed ? COLLAPSED_SIDEBAR_WIDTH : sidebarWidth;
 
-    // Lock body scroll when mobile sidebar is open
     useEffect(() => {
         if (mobileOpen) {
             document.body.style.overflow = "hidden";
@@ -118,7 +115,6 @@ export default function AdminLayout() {
         };
     }, [mobileOpen]);
 
-    // Fetch new inquiries badge count
     useEffect(() => {
         let isMounted = true;
         fetchInquiries({ status: "new", limit: 1 })
@@ -134,7 +130,6 @@ export default function AdminLayout() {
         };
     }, [location.pathname]);
 
-    // Global Ctrl+K / Cmd+K keyboard listener
     useEffect(() => {
         const handleKeyDown = (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -148,24 +143,30 @@ export default function AdminLayout() {
     }, []);
 
     const mobileBottomNav = [
-        { name: "Dashboard", path: "/admin", end: true, icon: LayoutDashboard },
+        { name: "Overview", path: "/admin", end: true, icon: LayoutDashboard },
         {
-            name: "Leads",
+            name: "Inquiries",
             path: "/admin/inquiries",
             icon: Mail,
             badge: newInquiriesCount > 0 ? newInquiriesCount : null
         },
-        { name: "Fresh", path: "/admin/fresh-properties", icon: Sparkles },
-        { name: "Auction", path: "/admin/properties", end: true, icon: Building2 },
-        { name: "Add New", path: "/admin/properties/new", icon: PlusCircle }
+        { name: "Direct", path: "/admin/fresh-properties", icon: Building },
+        { name: "Auctions", path: "/admin/properties", end: true, icon: Building2 },
+        { name: "New", path: "/admin/properties/new", icon: Plus }
     ];
 
     return (
         <div
-            className="min-h-screen w-full overflow-x-hidden bg-slate-100/70 text-slate-900 font-sans"
+            className="relative min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-gray-200/80 via-[#F3F4F6] to-red-50/50 text-gray-800 font-sans antialiased"
             style={{ "--admin-sidebar-width": `${effectiveSidebarWidth}px` }}
         >
-            {/* Admin Resizable & Responsive Sidebar */}
+            {/* Subtle Ambient Red & Gray Glassmorphic Backdrop */}
+            <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+                <div className="absolute -top-24 right-1/4 h-96 w-96 rounded-full bg-red-500/10 blur-3xl" />
+                <div className="absolute top-1/3 -left-20 h-96 w-96 rounded-full bg-gray-400/20 blur-3xl" />
+                <div className="absolute bottom-10 right-10 h-80 w-80 rounded-full bg-red-400/10 blur-3xl" />
+            </div>
+
             <AdminSidebar
                 mobileOpen={mobileOpen}
                 onCloseMobile={() => setMobileOpen(false)}
@@ -178,9 +179,8 @@ export default function AdminLayout() {
                 onResetWidth={handleResetSidebarWidth}
             />
 
-            {/* Main Area (dynamically tracks --admin-sidebar-width on lg+) */}
             <div
-                className={`flex min-h-screen min-w-0 flex-col lg:pl-[var(--admin-sidebar-width)] ${
+                className={`relative z-10 flex min-h-screen min-w-0 flex-col lg:pl-[var(--admin-sidebar-width)] ${
                     isResizing ? "" : "transition-[padding-left] duration-200 ease-out"
                 }`}
             >
@@ -189,15 +189,15 @@ export default function AdminLayout() {
                     onOpenCommandPalette={() => setCommandPaletteOpen(true)}
                 />
 
-                <main className="flex-1 min-w-0 p-3.5 sm:p-6 lg:p-8 pb-24 lg:pb-8">
+                <main className="flex-1 min-w-0 px-4 py-5 sm:px-6 lg:px-8 pb-24 lg:pb-10 max-w-[1600px] w-full mx-auto">
                     <Outlet />
                 </main>
             </div>
 
-            {/* Mobile Bottom Quick Navigation Bar (< lg) */}
+            {/* Mobile Bottom Navigation (< lg) */}
             <nav
-                aria-label="Admin mobile quick navigation"
-                className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-1 py-1.5 backdrop-blur-md shadow-[0_-4px_20px_rgba(15,23,42,0.06)] lg:hidden"
+                aria-label="Admin mobile navigation"
+                className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-gray-200/80 bg-white/75 backdrop-blur-xl px-1 py-1.5 lg:hidden"
             >
                 {mobileBottomNav.map((item) => {
                     const Icon = item.icon;
@@ -208,10 +208,10 @@ export default function AdminLayout() {
                             end={item.end}
                             onClick={() => setMobileOpen(false)}
                             className={({ isActive }) =>
-                                `relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition ${
+                                `relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition ${
                                     isActive
-                                        ? "text-slate-950 font-black bg-amber-500/15"
-                                        : "text-slate-500 hover:text-slate-900"
+                                        ? "text-red-700 font-semibold bg-red-50"
+                                        : "text-gray-500 hover:text-gray-900"
                                 }`
                             }
                         >
@@ -219,11 +219,11 @@ export default function AdminLayout() {
                                 <>
                                     <div className="relative">
                                         <Icon
-                                            size={18}
-                                            className={isActive ? "text-amber-600" : "text-slate-400"}
+                                            size={17}
+                                            className={isActive ? "text-red-600" : "text-gray-400"}
                                         />
                                         {item.badge ? (
-                                            <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white">
+                                            <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold text-white">
                                                 {item.badge}
                                             </span>
                                         ) : null}
@@ -236,7 +236,6 @@ export default function AdminLayout() {
                 })}
             </nav>
 
-            {/* Global Command Palette */}
             <AdminCommandPalette
                 isOpen={commandPaletteOpen}
                 onClose={() => setCommandPaletteOpen(false)}

@@ -50,7 +50,7 @@ export default function AdminAnalytics() {
     if (loading) {
         return (
             <div className="py-24">
-                <LoadingSpinner text="Generating real estate & valuation intelligence..." />
+                <LoadingSpinner text="Loading real estate & valuation reports..." />
             </div>
         );
     }
@@ -67,31 +67,33 @@ export default function AdminAnalytics() {
         .join(", ");
 
     return (
-        <div className="space-y-6 sm:space-y-8 animate-fade-in">
+        <div className="space-y-6 animate-fade-in">
             {/* Header with Title & Export Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-                        <BarChart3 className="text-amber-500" size={26} />
-                        <span>Market Intelligence &amp; Valuation Analytics</span>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200/70 text-red-600 shrink-0">
+                            <BarChart3 size={17} />
+                        </div>
+                        <span>Valuation &amp; Market Reports</span>
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500">
-                        Live visual breakdown of portfolio reserve values, institutional bank volumes, price brackets, and buyer conversion.
+                    <p className="text-xs text-gray-500 mt-1">
+                        Portfolio reserve values, institutional bank volumes, price brackets, and buyer inquiry conversion.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <button
                         onClick={loadAnalytics}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-2xs transition cursor-pointer"
                     >
-                        <RefreshCw size={14} className={loading ? "animate-spin text-amber-600" : "text-slate-500"} />
+                        <RefreshCw size={14} className={loading ? "animate-spin text-red-600" : "text-gray-500"} />
                         <span>Refresh</span>
                     </button>
 
                     <button
                         onClick={handleExport}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 shadow-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 shadow-xs transition cursor-pointer"
                     >
                         <Download size={14} />
                         <span>Export Report</span>
@@ -101,50 +103,50 @@ export default function AdminAnalytics() {
 
             {/* Top Valuation Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <div className="rounded-xl border border-red-200/70 bg-gradient-to-br from-red-50/45 via-white/50 to-white/35 backdrop-blur-md p-5 shadow-2xs">
+                    <span className="text-xs font-semibold text-gray-500 block">
                         Total Asset Valuation
                     </span>
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-600 mt-2">
+                    <div className="text-2xl font-bold text-red-600 mt-2 tabular-nums">
                         {formatCompactINR(totalValuation)}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-1">
+                    <div className="text-[11px] text-gray-500 mt-1">
                         Combined reserve pricing across {totalProperties.toLocaleString("en-IN")} listings
                     </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <div className="rounded-xl border border-gray-200/80 bg-gradient-to-br from-gray-200/45 via-white/50 to-white/35 backdrop-blur-md p-5 shadow-2xs">
+                    <span className="text-xs font-semibold text-gray-500 block">
                         Average Property Value
                     </span>
-                    <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+                    <div className="text-2xl font-bold text-gray-900 mt-2 tabular-nums">
                         {formatCompactINR(avgPrice)}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-1">
+                    <div className="text-[11px] text-gray-500 mt-1">
                         Across all active &amp; indexed categories
                     </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <div className="rounded-xl border border-red-200/70 bg-gradient-to-br from-red-50/45 via-white/50 to-white/35 backdrop-blur-md p-5 shadow-2xs">
+                    <span className="text-xs font-semibold text-gray-500 block">
                         Highest Value Asset
                     </span>
-                    <div className="text-2xl sm:text-3xl font-black text-amber-600 mt-2">
+                    <div className="text-2xl font-bold text-red-700 mt-2 tabular-nums">
                         {formatCompactINR(maxPrice)}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-1">
+                    <div className="text-[11px] text-gray-500 mt-1">
                         Maximum reserve price in database
                     </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <div className="rounded-xl border border-gray-200/80 bg-gradient-to-br from-gray-200/45 via-white/50 to-white/35 backdrop-blur-md p-5 shadow-2xs">
+                    <span className="text-xs font-semibold text-gray-500 block">
                         Lending Institutions
                     </span>
-                    <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+                    <div className="text-2xl font-bold text-gray-900 mt-2 tabular-nums">
                         {totalBanks}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-1 truncate">
+                    <div className="text-[11px] text-gray-500 mt-1 truncate">
                         {topBankNames || "Authorized partner banks"}
                     </div>
                 </div>

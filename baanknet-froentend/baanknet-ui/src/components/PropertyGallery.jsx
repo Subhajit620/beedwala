@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Building2, Camera } from "lucide-react";
+import SoldStamp from "./SoldStamp";
 
-export default function PropertyGallery({ photos = [], title = "Property" }) {
+export default function PropertyGallery({ photos = [], title = "Property", isSold = false }) {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [imageErrors, setImageErrors] = useState({});
 
@@ -48,7 +49,7 @@ export default function PropertyGallery({ photos = [], title = "Property" }) {
                         src={currentPhoto}
                         alt={`${title} - Photo ${selectedIndex + 1}`}
                         onError={() => handleImageError(selectedIndex)}
-                        className="h-full w-full object-cover"
+                        className={`h-full w-full object-cover ${isSold ? "grayscale contrast-110" : ""}`}
                     />
                 ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center bg-slate-800 text-slate-400">
@@ -56,6 +57,8 @@ export default function PropertyGallery({ photos = [], title = "Property" }) {
                         <span className="text-xs">Photo unavailable</span>
                     </div>
                 )}
+
+                {isSold && <SoldStamp variant="hero" />}
 
                 {/* Controls */}
                 {validPhotos.length > 1 && (

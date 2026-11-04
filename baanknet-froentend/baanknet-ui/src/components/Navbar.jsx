@@ -5,13 +5,13 @@ import {
     X,
     Bookmark,
     Scale,
-    Sparkles,
     Search,
     ArrowRight,
     Shield,
     ChevronDown,
-    Compass, User, LogOut, Lock
+    User, LogOut, Lock
 } from "lucide-react";
+import { VerifiedSealIcon, PropertyFinderIcon } from "./BrandIcons";
 import { useApp } from "../context/AppContext";
 import { fetchProperties } from "../services/propertyService";
 import logoImg from "../assets/logo.jpg";
@@ -292,7 +292,7 @@ export default function Navbar() {
                             className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900 transition shadow-xs cursor-pointer active:scale-95"
                             title="Open Smart Property Finder & Buyer Guide"
                         >
-                            <Compass size={14} className="text-amber-600" />
+                            <PropertyFinderIcon size={14} className="text-amber-700" />
                             <span>Quick Guide</span>
                         </button>
 
@@ -324,7 +324,7 @@ export default function Navbar() {
                             to="/properties"
                             className="hidden md:inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-slate-950 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-bold text-amber-400 hover:bg-slate-900 transition shadow-xs border border-slate-800 active:scale-95"
                         >
-                            <Sparkles size={14} className="text-amber-400" />
+                            <VerifiedSealIcon size={14} className="text-amber-400" />
                             <span>Explore</span>
                         </Link>
                     </div>

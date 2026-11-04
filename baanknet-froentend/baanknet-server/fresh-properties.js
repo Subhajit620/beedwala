@@ -1,4 +1,4 @@
-module.exports = function registerFreshProperties(app, mongoose, requireAdmin) {
+module.exports = function registerFreshProperties(app, mongoose, requireAdmin, recordAudit) {
     // Photos: a public image URL, or an image uploaded from the admin's device (compressed data URL, max ~3 MB)
     const isValidPhoto = (value) =>
         /^https?:\/\/\S+$/i.test(value) || (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value) && value.length < 3 * 1024 * 1024);
@@ -41,10 +41,11 @@ module.exports = function registerFreshProperties(app, mongoose, requireAdmin) {
         ],
         // Optional direct contact shown to buyers (Call / WhatsApp). Enquiries always reach the admin Inquiries page.
         contactPhone: { type: String, trim: true, maxlength: 20, match: [/^$|^\+?[0-9 ]{8,18}$/, "Enter a valid contact phone number."] },
-        isPublished: { type: Boolean, default: false }
+        isPublished: { type: Boolean, default: false },
+        isSold: { type: Boolean, default: false }
     }, { timestamps: true });
     const FreshProperty = mongoose.model("FreshProperty", schema);
-    const fields = ["title", "description", "price", "propertyType", "address", "city", "state", "pincode", "latitude", "longitude", "area", "bedrooms", "bathrooms", "features", "photos", "videos", "contactPhone", "isPublished"];
+    const fields = ["title", "description", "price", "propertyType", "address", "city", "state", "pincode", "latitude", "longitude", "area", "bedrooms", "bathrooms", "features", "photos", "videos", "contactPhone", "isPublished", "isSold"];
     const payload = body => Object.fromEntries(fields.filter(key => Object.hasOwn(body, key)).map(key => [key, body[key]]));
     const handleError = (res, error) => {
         const invalid = ["ValidationError", "CastError"].includes(error.name);
@@ -68,6 +69,14 @@ module.exports = function registerFreshProperties(app, mongoose, requireAdmin) {
         try {
             await ensureConnected();
             const data = await FreshProperty.create(payload(req.body));
+            if (typeof recordAudit === "function") {
+                await recordAudit("Created Fresh Property", "property", data._id.toString(), data.title, {
+                    price: data.price,
+                    city: data.city,
+                    propertyType: data.propertyType,
+                    isPublished: data.isPublished
+                });
+            }
             res.status(201).json({ success: true, data });
         } catch (error) { handleError(res, error); }
     });
@@ -84,7 +93,57 @@ module.exports = function registerFreshProperties(app, mongoose, requireAdmin) {
                 if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
                 return res.json({ success: true, data });
             }
+            if (Array.isArray(req.body?.appendVideos) && req.body.appendVideos.length > 0) {
+                const validVideos = req.body.appendVideos
+                    .filter((v) => v && typeof v.url === "string" && v.url.trim())
+                    .map((v) => ({
+                        url: v.url.trim().slice(0, 1000),
+                        source: ["upload", "youtube", "vimeo", "link"].includes(v.source) ? v.source : "upload",
+                        title: typeof v.title === "string" ? v.title.trim().slice(0, 120) : ""
+                    }));
+                const data = await FreshProperty.findByIdAndUpdate(
+                    req.params.id,
+                    { $push: { videos: { $each: validVideos, $slice: 10 } } },
+                    { new: true }
+                );
+                if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
+                return res.json({ success: true, data });
+            }
             const data = await FreshProperty.findByIdAndUpdate(req.params.id, { $set: payload(req.body) }, { new: true, runValidators: true });
+            if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
+            if (typeof recordAudit === "function") {
+                await recordAudit("Updated Fresh Property", "property", data._id.toString(), data.title, {
+                    price: data.price,
+                    city: data.city,
+                    isPublished: data.isPublished
+                });
+            }
+            res.json({ success: true, data });
+        } catch (error) { handleError(res, error); }
+    });
+    app.post("/api/fresh-properties/:id/videos", async (req, res) => {
+        try {
+            await ensureConnected();
+            const rawList = Array.isArray(req.body?.videos)
+                ? req.body.videos
+                : req.body?.video
+                ? [req.body.video]
+                : [];
+            const validVideos = rawList
+                .filter((v) => v && typeof v.url === "string" && v.url.trim())
+                .map((v) => ({
+                    url: v.url.trim().slice(0, 1000),
+                    source: ["upload", "youtube", "vimeo", "link"].includes(v.source) ? v.source : "upload",
+                    title: typeof v.title === "string" ? v.title.trim().slice(0, 120) : ""
+                }));
+            if (validVideos.length === 0) {
+                return res.status(400).json({ success: false, message: "Please provide at least one valid video." });
+            }
+            const data = await FreshProperty.findByIdAndUpdate(
+                req.params.id,
+                { $push: { videos: { $each: validVideos, $slice: 10 } } },
+                { new: true }
+            );
             if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
             res.json({ success: true, data });
         } catch (error) { handleError(res, error); }
@@ -94,6 +153,12 @@ module.exports = function registerFreshProperties(app, mongoose, requireAdmin) {
             await ensureConnected();
             const data = await FreshProperty.findByIdAndDelete(req.params.id);
             if (!data) return res.status(404).json({ success: false, message: "Fresh property not found." });
+            if (typeof recordAudit === "function") {
+                await recordAudit("Deleted Fresh Property", "property", data._id.toString(), data.title, {
+                    price: data.price,
+                    city: data.city
+                });
+            }
             res.json({ success: true });
         } catch (error) { handleError(res, error); }
     });

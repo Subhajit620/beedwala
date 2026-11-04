@@ -67,10 +67,10 @@ export default function AuctionCountdown({ property, variant = "full" }) {
                 <div className="flex items-center justify-between mb-2">
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-900">
                         <Clock size={12} className="text-amber-600 animate-pulse" />
-                        <span>🔨 Auction: {schedule.auctionDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                        <span>Auction: {schedule.auctionDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                     </span>
                     <span className="text-[11px] font-bold text-slate-700">
-                        ⏰ {schedule.auctionTime}
+                        {schedule.auctionTime}
                     </span>
                 </div>
 
@@ -188,7 +188,7 @@ export default function AuctionCountdown({ property, variant = "full" }) {
             <div className="p-5 sm:p-6 bg-slate-50/50 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-2xs">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                        💰 EMD Amount & Bid Increment
+                        EMD Amount &amp; Bid Increment
                     </span>
                     <span className="text-lg sm:text-xl font-black text-slate-900 block">
                         {formatINR(schedule.emdAmount)}
@@ -200,7 +200,7 @@ export default function AuctionCountdown({ property, variant = "full" }) {
 
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-2xs">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                        📅 EMD Submission Last Date
+                        EMD Submission Last Date
                     </span>
                     <span className="text-sm sm:text-base font-bold text-slate-900 block">
                         {schedule.emdSubmissionDate.toLocaleDateString("en-IN", {
@@ -216,7 +216,7 @@ export default function AuctionCountdown({ property, variant = "full" }) {
 
                 <div className="rounded-2xl bg-white p-4 border border-slate-200/80 shadow-2xs">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                        🔨 Auction Date & ⏰ Auction Time
+                        Auction Date &amp; Time
                     </span>
                     <span className="text-sm sm:text-base font-bold text-slate-900 block">
                         {schedule.auctionDate.toLocaleDateString("en-IN", {
@@ -226,7 +226,7 @@ export default function AuctionCountdown({ property, variant = "full" }) {
                         })}
                     </span>
                     <span className="text-[10px] text-emerald-700 font-bold mt-0.5 block">
-                        ⏰ Auction Time: {schedule.auctionTime}
+                        Auction Time: {schedule.auctionTime}
                     </span>
                 </div>
             </div>

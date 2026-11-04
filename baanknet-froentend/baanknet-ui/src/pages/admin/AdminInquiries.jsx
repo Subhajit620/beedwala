@@ -264,23 +264,25 @@ export default function AdminInquiries() {
             {/* Header & Controls */}
             <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-                        <Mail className="text-amber-500 shrink-0" size={24} />
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 border border-red-200/70 text-red-600 shrink-0">
+                            <Mail size={17} />
+                        </div>
                         <span>Buyer Inquiries &amp; Leads CRM</span>
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                        Manage visitor sign-ins, Fresh Property enquiries, and auction bidders with 1-click WhatsApp &amp; phone call actions.
+                    <p className="text-xs text-gray-500 mt-1">
+                        Manage visitor sign-ins, Direct Sale enquiries, and auction bidders with 1-click WhatsApp &amp; phone call actions.
                     </p>
                 </div>
 
                 {/* Right Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2">
                     {/* View Switcher: Table vs Kanban */}
-                    <div className="flex items-center rounded-xl bg-slate-200/80 p-1">
+                    <div className="flex items-center rounded-lg bg-gray-100 border border-gray-200/80 p-0.5">
                         <button
                             onClick={() => setViewMode("table")}
-                            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                                viewMode === "table" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                                viewMode === "table" ? "bg-white text-gray-900 shadow-2xs" : "text-gray-600 hover:text-gray-900"
                             }`}
                         >
                             <TableIcon size={14} />
@@ -288,8 +290,8 @@ export default function AdminInquiries() {
                         </button>
                         <button
                             onClick={() => setViewMode("kanban")}
-                            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
-                                viewMode === "kanban" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                                viewMode === "kanban" ? "bg-white text-gray-900 shadow-2xs" : "text-gray-600 hover:text-gray-900"
                             }`}
                         >
                             <LayoutGrid size={14} />
@@ -300,16 +302,16 @@ export default function AdminInquiries() {
                     <button
                         type="button"
                         onClick={handleCopyAllPhones}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 shadow-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-3.5 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-200 transition cursor-pointer"
                         title="Copy all buyer mobile numbers for WhatsApp Broadcast or calling"
                     >
-                        <Phone size={14} className="text-emerald-600" />
+                        <Phone size={14} className="text-red-600" />
                         <span>Copy Phone Nos.</span>
                     </button>
 
                     <button
                         onClick={handleExportCSV}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 shadow-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-red-700 shadow-xs transition cursor-pointer"
                     >
                         <Download size={14} />
                         <span>Export CSV</span>
@@ -321,20 +323,20 @@ export default function AdminInquiries() {
             <div className="flex flex-wrap items-center gap-1.5">
                 {[
                     { id: "all", label: "All Channels" },
-                    { id: "visitor_login", label: "🔑 Website Sign-Ins" },
-                    { id: "property_inquiry", label: "🏛️ Auction Inquiries" },
-                    { id: "fresh_property", label: "🏡 Fresh Property Leads" },
-                    { id: "callback_request", label: "📞 Callback Requests" },
-                    { id: "whatsapp_alert", label: "🔔 WhatsApp Alert Subscribers" }
+                    { id: "visitor_login", label: "Website Sign-Ins" },
+                    { id: "property_inquiry", label: "Auction Inquiries" },
+                    { id: "fresh_property", label: "Direct Sale Leads" },
+                    { id: "callback_request", label: "Callback Requests" },
+                    { id: "whatsapp_alert", label: "WhatsApp Subscribers" }
                 ].map((src) => (
                     <button
                         key={src.id}
                         type="button"
                         onClick={() => setSourceFilter(src.id)}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer border ${
                             sourceFilter === src.id
-                                ? "bg-amber-500 text-slate-950 font-black shadow-2xs"
-                                : "bg-white text-slate-600 hover:bg-amber-50 border border-slate-200"
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-white text-gray-600 hover:bg-gray-50 border-gray-200"
                         }`}
                     >
                         {src.label}
@@ -343,10 +345,10 @@ export default function AdminInquiries() {
             </div>
 
             {/* Quick Status Tabs */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-3">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-gray-200 pb-3">
                 {[
                     { id: "all", label: "All Leads", count: statusCounts.all || 0 },
-                    { id: "new", label: "New Leads", count: statusCounts.new || 0, badgeColor: "bg-rose-500 text-white" },
+                    { id: "new", label: "New Leads", count: statusCounts.new || 0, badgeColor: "bg-red-600 text-white" },
                     { id: "contacted", label: "Contacted", count: statusCounts.contacted || 0 },
                     { id: "in_progress", label: "Due Diligence", count: statusCounts.in_progress || 0 },
                     { id: "converted", label: "Won / Converted", count: statusCounts.converted || 0 },
@@ -358,16 +360,16 @@ export default function AdminInquiries() {
                             setStatusFilter(tab.id);
                             setPage(1);
                         }}
-                        className={`flex items-center gap-1.5 sm:gap-2 rounded-xl px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
+                        className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer border ${
                             statusFilter === tab.id
-                                ? "bg-slate-950 text-amber-400 shadow-xs"
-                                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                                ? "bg-red-600 text-white border-red-600 shadow-2xs"
+                                : "bg-white text-gray-600 hover:bg-gray-50 border-gray-200"
                         }`}
                     >
                         <span>{tab.label}</span>
                         <span
-                            className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
-                                tab.badgeColor || (statusFilter === tab.id ? "bg-amber-400 text-slate-950" : "bg-slate-100 text-slate-600")
+                            className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                                tab.badgeColor || (statusFilter === tab.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600")
                             }`}
                         >
                             {tab.count}
@@ -377,7 +379,7 @@ export default function AdminInquiries() {
             </div>
 
             {/* Search and Filters */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xs">
+            <div className="rounded-xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-3.5 sm:p-4 shadow-2xs">
                 <div className="relative">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -388,18 +390,18 @@ export default function AdminInquiries() {
                             setPage(1);
                         }}
                         placeholder="Search leads by buyer name, phone number, email, or property title..."
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/15 transition"
+                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/70 pl-10 pr-3 text-xs font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition"
                     />
                 </div>
             </div>
 
             {/* Loading / Error States */}
             {loading ? (
-                <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+                <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md">
                     <LoadingSpinner />
                 </div>
             ) : error ? (
-                <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700">
+                <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 backdrop-blur-md p-4 text-xs font-bold text-rose-700">
                     <AlertCircle size={18} />
                     <span>{error}</span>
                 </div>
@@ -412,7 +414,7 @@ export default function AdminInquiries() {
                         return (
                             <div
                                 key={stage.id}
-                                className={`flex flex-col rounded-2xl border bg-slate-100/70 p-3 max-h-[75vh] ${stage.color}`}
+                                className={`flex flex-col rounded-2xl border bg-gray-100/55 backdrop-blur-md p-3 max-h-[75vh] ${stage.color}`}
                             >
                                 {/* Column Header */}
                                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/80">
@@ -436,7 +438,7 @@ export default function AdminInquiries() {
                                         stageLeads.map((lead) => (
                                             <div
                                                 key={lead._id}
-                                                className="group rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs hover:shadow-md hover:border-amber-400 transition"
+                                                className="group rounded-xl border border-slate-200/70 bg-white/60 backdrop-blur-md p-3.5 shadow-2xs hover:shadow-md hover:border-red-400 transition"
                                             >
                                                 <div className="flex items-start justify-between gap-1.5">
                                                     <h4 className="text-xs font-bold text-slate-900 truncate">
@@ -498,7 +500,7 @@ export default function AdminInquiries() {
                 </div>
             ) : filteredInquiries.length === 0 ? (
                 /* Empty State */
-                <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-12 text-center shadow-xs">
                     <Mail size={40} className="mx-auto text-slate-300" />
                     <h3 className="mt-3 text-base font-bold text-slate-800">No customer inquiries found</h3>
                     <p className="mt-1 text-xs text-slate-500">
@@ -512,7 +514,7 @@ export default function AdminInquiries() {
                         {filteredInquiries.map((inq) => (
                             <div
                                 key={inq._id}
-                                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-3"
+                                className="rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md p-4 shadow-xs space-y-3"
                             >
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0 flex-1">
@@ -614,11 +616,11 @@ export default function AdminInquiries() {
                     </div>
 
                     {/* Desktop Table View (md+) */}
-                    <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+                    <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md shadow-xs">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse text-xs">
                                 <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                    <tr className="border-b border-slate-200/70 bg-slate-50/55 text-[11px] font-black uppercase tracking-wider text-slate-500">
                                         <th className="py-3.5 px-4 sm:px-6">Investor / Contact</th>
                                         <th className="py-3.5 px-4">Property Inquired</th>
                                         <th className="py-3.5 px-4">Status &amp; Stage</th>
@@ -736,7 +738,7 @@ export default function AdminInquiries() {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-6 shadow-xs">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/55 backdrop-blur-md px-4 py-3 sm:px-6 shadow-xs">
                             <div className="text-xs font-semibold text-slate-500">
                                 Showing <span className="font-bold text-slate-900">{inquiries.length}</span> of{" "}
                                 <span className="font-bold text-slate-900">{total}</span> leads
@@ -772,11 +774,11 @@ export default function AdminInquiries() {
                         {/* Drawer Header */}
                         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 sm:px-6 py-4">
                             <div className="flex items-center gap-3 min-w-0">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 font-black text-amber-400">
-                                    <User size={20} />
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 border border-blue-200/80 text-blue-600">
+                                    <User size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-sm sm:text-base font-black text-slate-900 truncate">{activeLead.name}</h3>
+                                    <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">{activeLead.name}</h3>
                                     <p className="text-xs text-slate-500">
                                         Received on {formatDate(activeLead.createdAt)}
                                     </p>
@@ -886,12 +888,12 @@ export default function AdminInquiries() {
                                         value={newNote}
                                         onChange={(e) => setNewNote(e.target.value)}
                                         placeholder="Add internal note / callback summary..."
-                                        className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none focus:border-amber-500 focus:bg-white"
+                                        className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium outline-none focus:border-blue-500 focus:bg-white"
                                     />
                                     <button
                                         type="submit"
                                         disabled={savingNote || !newNote.trim()}
-                                        className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-bold text-amber-400 hover:bg-slate-900 disabled:opacity-40 transition"
+                                        className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40 transition cursor-pointer"
                                     >
                                         Save Note
                                     </button>

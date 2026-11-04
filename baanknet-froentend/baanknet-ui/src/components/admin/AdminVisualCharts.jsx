@@ -1,34 +1,27 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    TrendingUp,
-    Landmark,
-    PieChart as PieIcon,
-    BarChart3,
-    Users,
-    ArrowRight
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { formatCompactINR } from "../../utils/formatters";
 
 const EMPTY_ARRAY = [];
 
+// Institutional Gray & Red Palette
 const CHART_PALETTE = [
-    { bg: "bg-amber-500", text: "text-amber-500", stroke: "#f59e0b" },
-    { bg: "bg-blue-500", text: "text-blue-500", stroke: "#3b82f6" },
-    { bg: "bg-emerald-500", text: "text-emerald-500", stroke: "#10b981" },
-    { bg: "bg-purple-500", text: "text-purple-500", stroke: "#a855f7" },
-    { bg: "bg-rose-500", text: "text-rose-500", stroke: "#f43f5e" },
-    { bg: "bg-indigo-500", text: "text-indigo-500", stroke: "#6366f1" },
-    { bg: "bg-teal-500", text: "text-teal-500", stroke: "#14b8a6" },
-    { bg: "bg-slate-400", text: "text-slate-500", stroke: "#94a3b8" }
+    { bg: "bg-red-600", text: "text-red-600", stroke: "#dc2626" },
+    { bg: "bg-gray-700", text: "text-gray-700", stroke: "#374151" },
+    { bg: "bg-red-500", text: "text-red-500", stroke: "#ef4444" },
+    { bg: "bg-gray-500", text: "text-gray-600", stroke: "#6b7280" },
+    { bg: "bg-red-800", text: "text-red-800", stroke: "#991b1b" },
+    { bg: "bg-red-400", text: "text-red-500", stroke: "#f87171" },
+    { bg: "bg-gray-300", text: "text-gray-500", stroke: "#d1d5db" }
 ];
 
 const BRACKET_COLORS = [
-    "bg-emerald-500",
-    "bg-blue-500",
-    "bg-amber-500",
-    "bg-purple-500",
-    "bg-rose-500"
+    "bg-gray-400",
+    "bg-gray-600",
+    "bg-red-500",
+    "bg-red-600",
+    "bg-red-800"
 ];
 
 function shortenLabel(label, maxLen = 14) {
@@ -45,15 +38,13 @@ function shortenLabel(label, maxLen = 14) {
 }
 
 /**
- * 1. Real Valuation & Listings Distribution / Trend Area Chart
- * Uses 100% live MongoDB data (Monthly Timeline, Top Partner Banks, or Top Localities)
+ * 1. Valuation & Listings Volume Area Chart
  */
 export function ValuationTrendAreaChart({ stats, data }) {
     const monthlyTrend = stats?.monthlyTrend || data || EMPTY_ARRAY;
     const banksBreakdown = stats?.banksBreakdown || EMPTY_ARRAY;
     const localitiesBreakdown = stats?.localitiesBreakdown || EMPTY_ARRAY;
 
-    // Default to "timeline" if there are >= 3 distinct months, otherwise "banks" for a rich multi-point curve
     const [viewMode, setViewMode] = useState(() =>
         monthlyTrend.length >= 3 ? "timeline" : "banks"
     );
@@ -63,7 +54,7 @@ export function ValuationTrendAreaChart({ stats, data }) {
         if (viewMode === "timeline" && monthlyTrend.length > 0) {
             return monthlyTrend.slice(-8).map((m) => ({
                 label: m.month || m.monthKey,
-                fullName: `Month: ${m.month || m.monthKey}`,
+                fullName: `Period: ${m.month || m.monthKey}`,
                 listings: Number(m.listings || 0),
                 monthlyListings: Number(m.monthlyListings || m.listings || 0),
                 valuationCr: Number(m.valuationCr || 0),
@@ -81,7 +72,6 @@ export function ValuationTrendAreaChart({ stats, data }) {
             }));
         }
 
-        // Default: "banks" — real top banks from MongoDB
         if (banksBreakdown.length > 0) {
             return banksBreakdown.slice(0, 7).map((b) => ({
                 label: shortenLabel(b._id, 11),
@@ -107,9 +97,9 @@ export function ValuationTrendAreaChart({ stats, data }) {
     const maxValCr = Math.max(1, ...points.map((p) => p.valuationCr)) * 1.15;
 
     const svgWidth = 620;
-    const svgHeight = 225;
-    const paddingX = 44;
-    const paddingY = 32;
+    const svgHeight = 220;
+    const paddingX = 42;
+    const paddingY = 30;
 
     const getX = (idx) => {
         if (points.length <= 1) return svgWidth / 2;
@@ -138,32 +128,28 @@ export function ValuationTrendAreaChart({ stats, data }) {
             : "";
 
     return (
-        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs card-hover-effect space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
+        <div className="rounded-xl border border-gray-200/70 bg-white/55 backdrop-blur-md p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-zinc-100">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <TrendingUp size={18} className="text-amber-500 shrink-0" />
-                        <h3 className="text-sm sm:text-base font-black text-slate-900">
-                            Live Portfolio Volume &amp; Valuation Graph
-                        </h3>
-                    </div>
-                    <p className="text-xs text-slate-400">
-                        100% real database metrics across partner banks, localities, and notice dates
+                    <h3 className="text-sm font-semibold text-zinc-900">
+                        Portfolio Volume &amp; Valuation
+                    </h3>
+                    <p className="text-xs text-zinc-500">
+                        Notice count and cumulative reserve value across active segments
                     </p>
                 </div>
 
-                {/* Perspective Switcher Pills */}
-                <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+                <div className="flex flex-wrap items-center gap-1 bg-zinc-100 p-0.5 rounded-lg self-start sm:self-auto">
                     <button
                         type="button"
                         onClick={() => {
                             setViewMode("banks");
                             setHoveredIndex(null);
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
                             viewMode === "banks"
-                                ? "bg-slate-950 text-amber-400 shadow-2xs"
-                                : "text-slate-600 hover:text-slate-900"
+                                ? "bg-white text-zinc-900 shadow-2xs"
+                                : "text-zinc-600 hover:text-zinc-900"
                         }`}
                     >
                         By Bank
@@ -174,10 +160,10 @@ export function ValuationTrendAreaChart({ stats, data }) {
                             setViewMode("localities");
                             setHoveredIndex(null);
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
                             viewMode === "localities"
-                                ? "bg-slate-950 text-amber-400 shadow-2xs"
-                                : "text-slate-600 hover:text-slate-900"
+                                ? "bg-white text-zinc-900 shadow-2xs"
+                                : "text-zinc-600 hover:text-zinc-900"
                         }`}
                     >
                         By Locality
@@ -188,10 +174,10 @@ export function ValuationTrendAreaChart({ stats, data }) {
                             setViewMode("timeline");
                             setHoveredIndex(null);
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
                             viewMode === "timeline"
-                                ? "bg-slate-950 text-amber-400 shadow-2xs"
-                                : "text-slate-600 hover:text-slate-900"
+                                ? "bg-white text-zinc-900 shadow-2xs"
+                                : "text-zinc-600 hover:text-zinc-900"
                         }`}
                     >
                         Timeline ({monthlyTrend.length})
@@ -199,62 +185,59 @@ export function ValuationTrendAreaChart({ stats, data }) {
                 </div>
             </div>
 
-            {/* Active Real Stat Callout + Legend */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 {activePoint ? (
-                    <div className="flex flex-wrap items-baseline gap-4 sm:gap-6">
+                    <div className="flex flex-wrap items-baseline gap-6">
                         <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate max-w-[220px]">
+                            <span className="text-[11px] font-medium text-zinc-500 block truncate max-w-[220px]">
                                 {activePoint.fullName}
                             </span>
-                            <span className="text-xl sm:text-2xl font-black text-slate-900">
-                                {activePoint.listings.toLocaleString("en-IN")} Notices
+                            <span className="text-xl font-semibold text-zinc-900 tabular-nums">
+                                {activePoint.listings.toLocaleString("en-IN")} notices
                             </span>
                         </div>
                         <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                                Real Reserve Valuation
+                            <span className="text-[11px] font-medium text-zinc-500 block">
+                                Reserve Valuation
                             </span>
-                            <span className="text-xl sm:text-2xl font-black text-emerald-600">
+                            <span className="text-xl font-semibold text-zinc-900 tabular-nums">
                                 {formatCompactINR(activePoint.rawValuation)}
                             </span>
                         </div>
                     </div>
                 ) : (
-                    <div className="text-xs text-slate-400">No data points available in database.</div>
+                    <div className="text-xs text-zinc-400">No data points available.</div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                        <span className="h-3 w-3 rounded-full bg-amber-500 inline-block" />
+                <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                    <div className="flex items-center gap-1.5 font-medium">
+                        <span className="h-2.5 w-2.5 rounded-xs bg-red-600 inline-block" />
                         <span>Listings</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-                        <span className="h-3 w-3 rounded-full bg-emerald-500 inline-block" />
+                    <div className="flex items-center gap-1.5 font-medium">
+                        <span className="h-2.5 w-2.5 rounded-xs bg-gray-600 inline-block" />
                         <span>Valuation (₹ Cr)</span>
                     </div>
                 </div>
             </div>
 
-            {/* SVG Interactive Dual-Curve Area Chart */}
             {points.length === 0 ? (
-                <div className="h-48 flex items-center justify-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="h-48 flex items-center justify-center text-xs text-gray-400 bg-gray-50 rounded-lg border border-gray-100">
                     No property records found for this view.
                 </div>
             ) : (
                 <div className="relative w-full overflow-hidden">
                     <svg
                         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                        className="w-full h-48 sm:h-56 overflow-visible"
+                        className="w-full h-48 sm:h-52 overflow-visible"
                     >
                         <defs>
-                            <linearGradient id="amberRealGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.32" />
-                                <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
+                            <linearGradient id="zincAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#dc2626" stopOpacity="0.18" />
+                                <stop offset="100%" stopColor="#dc2626" stopOpacity="0.0" />
                             </linearGradient>
                         </defs>
 
-                        {/* Horizontal Grid lines with Y-axis scale labels */}
                         {[0.25, 0.5, 0.75, 1].map((pct, i) => {
                             const y = svgHeight - paddingY - pct * (svgHeight - paddingY * 2);
                             const yVal = Math.round(maxListings * pct);
@@ -265,15 +248,14 @@ export function ValuationTrendAreaChart({ stats, data }) {
                                         y1={y}
                                         x2={svgWidth - paddingX}
                                         y2={y}
-                                        stroke="#f1f5f9"
+                                        stroke="#f3f4f6"
                                         strokeWidth="1"
-                                        strokeDasharray="4 4"
                                     />
                                     <text
-                                        x={paddingX - 6}
+                                        x={paddingX - 8}
                                         y={y + 3}
                                         textAnchor="end"
-                                        className="text-[9px] font-semibold fill-slate-400 select-none"
+                                        className="text-[9px] font-medium fill-gray-400 select-none tabular-nums"
                                     >
                                         {yVal}
                                     </text>
@@ -281,35 +263,31 @@ export function ValuationTrendAreaChart({ stats, data }) {
                             );
                         })}
 
-                        {/* Area fill for Listings */}
-                        {areaD && <path d={areaD} fill="url(#amberRealGradient)" />}
+                        {areaD && <path d={areaD} fill="url(#zincAreaGradient)" />}
 
-                        {/* Valuation Curve (Emerald dashed line) */}
                         {points.length > 1 && (
                             <path
                                 d={valuationPathD}
                                 fill="none"
-                                stroke="#10b981"
-                                strokeWidth="2.5"
-                                strokeDasharray="5 4"
+                                stroke="#4b5563"
+                                strokeWidth="2"
+                                strokeDasharray="4 4"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             />
                         )}
 
-                        {/* Listings Curve (Amber solid line) */}
                         {points.length > 1 && (
                             <path
                                 d={listingsPathD}
                                 fill="none"
-                                stroke="#f59e0b"
-                                strokeWidth="3.5"
+                                stroke="#dc2626"
+                                strokeWidth="2.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             />
                         )}
 
-                        {/* Interactive Points */}
                         {points.map((p, idx) => {
                             const x = getX(idx);
                             const yL = getYListings(p.listings);
@@ -318,56 +296,50 @@ export function ValuationTrendAreaChart({ stats, data }) {
 
                             return (
                                 <g key={idx} className="cursor-pointer">
-                                    {/* Vertical guide line on active point */}
                                     {isHovered && (
                                         <line
                                             x1={x}
                                             y1={paddingY / 2}
                                             x2={x}
                                             y2={svgHeight - paddingY}
-                                            stroke="#cbd5e1"
+                                            stroke="#d1d5db"
                                             strokeWidth="1"
-                                            strokeDasharray="3 3"
                                         />
                                     )}
 
-                                    {/* Valuation Dot (Emerald) */}
                                     <circle
                                         cx={x}
                                         cy={yV}
-                                        r={isHovered ? 5.5 : 4}
+                                        r={isHovered ? 4.5 : 3.5}
                                         className={
                                             isHovered
-                                                ? "fill-emerald-600 stroke-white stroke-2"
-                                                : "fill-white stroke-emerald-500 stroke-2"
+                                                ? "fill-gray-700 stroke-white stroke-2"
+                                                : "fill-white stroke-gray-600 stroke-2"
                                         }
                                     />
 
-                                    {/* Listings Dot (Amber) */}
                                     <circle
                                         cx={x}
                                         cy={yL}
-                                        r={isHovered ? 7 : 5}
+                                        r={isHovered ? 5.5 : 4}
                                         className={`${
                                             isHovered
-                                                ? "fill-slate-950 stroke-amber-400 stroke-2"
-                                                : "fill-white stroke-amber-500 stroke-2"
+                                                ? "fill-red-600 stroke-white stroke-2"
+                                                : "fill-white stroke-red-600 stroke-2"
                                         } transition-all duration-150`}
                                     />
 
-                                    {/* Value Pill above hovered point */}
                                     {isHovered && (
                                         <text
                                             x={x}
                                             y={Math.max(14, Math.min(yL, yV) - 10)}
                                             textAnchor="middle"
-                                            className="text-[10px] font-black fill-slate-900 select-none"
+                                            className="text-[10px] font-semibold fill-zinc-900 select-none tabular-nums"
                                         >
-                                            {p.listings} • ₹{p.valuationCr}Cr
+                                            {p.listings} · ₹{p.valuationCr}Cr
                                         </text>
                                     )}
 
-                                    {/* Invisible hover/tap hit area */}
                                     <rect
                                         x={x - 28}
                                         y={0}
@@ -378,13 +350,12 @@ export function ValuationTrendAreaChart({ stats, data }) {
                                         onClick={() => setHoveredIndex(idx)}
                                     />
 
-                                    {/* X-axis Label */}
                                     <text
                                         x={x}
                                         y={svgHeight - 8}
                                         textAnchor="middle"
-                                        className={`text-[10px] font-bold select-none ${
-                                            isHovered ? "fill-slate-950 font-black" : "fill-slate-500"
+                                        className={`text-[10px] select-none ${
+                                            isHovered ? "fill-zinc-900 font-semibold" : "fill-zinc-500 font-medium"
                                         }`}
                                     >
                                         {p.label}
@@ -400,7 +371,7 @@ export function ValuationTrendAreaChart({ stats, data }) {
 }
 
 /**
- * 2. Bank Market Share Visual Bar Chart (100% Real MongoDB Data)
+ * 2. Partner Bank Share Breakdown
  */
 export function BankShareBarChart({ stats, banksData }) {
     const navigate = useNavigate();
@@ -445,71 +416,63 @@ export function BankShareBarChart({ stats, banksData }) {
         return [
             ...topFive,
             {
-                name: `Other ${rest.length} Partner Banks`,
+                name: `Other ${rest.length} institutions`,
                 count: restCount,
                 totalValuation: restValuation,
                 percent: restPercent,
-                color: "bg-slate-400",
+                color: "bg-zinc-300",
                 isFilterable: false
             }
         ];
     }, [rawBanks, totalProperties, showAllBanks]);
 
     return (
-        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs card-hover-effect space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                    <Landmark size={18} className="text-amber-500 shrink-0" />
-                    <div>
-                        <h3 className="text-sm sm:text-base font-black text-slate-900">
-                            Partner Bank Share Breakdown
-                        </h3>
-                        <p className="text-xs text-slate-400">
-                            Live notice volume &amp; reserve valuation across {totalBanksCount} lending banks
-                        </p>
-                    </div>
+        <div className="rounded-xl border border-gray-200/70 bg-white/55 backdrop-blur-md p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-100">
+                <div>
+                    <h3 className="text-sm font-semibold text-zinc-900">
+                        Inventory by Lending Institution
+                    </h3>
+                    <p className="text-xs text-zinc-500">
+                        Distribution across {totalBanksCount} partner banks
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
                     {rawBanks.length > 6 && (
                         <button
                             type="button"
                             onClick={() => setShowAllBanks((prev) => !prev)}
-                            className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-full transition cursor-pointer"
+                            className="text-xs font-medium text-zinc-700 bg-zinc-100 hover:bg-zinc-200 px-2.5 py-1 rounded-md transition cursor-pointer"
                         >
-                            {showAllBanks ? "Show Top 5" : `Show All (${rawBanks.length})`}
+                            {showAllBanks ? "Show top 5" : `View all (${rawBanks.length})`}
                         </button>
                     )}
-                    <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
-                        {totalBanksCount} Institutions
-                    </span>
                 </div>
             </div>
 
             {formattedBanks.length === 0 ? (
-                <div className="py-10 text-center text-xs text-slate-400">
-                    No bank records found in database.
+                <div className="py-10 text-center text-xs text-zinc-400">
+                    No bank records found.
                 </div>
             ) : (
                 <>
-                    {/* Progress Stack Bar */}
-                    <div className="h-4 w-full rounded-full bg-slate-100 overflow-hidden flex shadow-2xs">
+                    <div className="h-2.5 w-full rounded-sm bg-zinc-100 overflow-hidden flex gap-0.5">
                         {formattedBanks.map((b, i) => (
                             <div
                                 key={i}
-                                className={`${b.color} h-full transition-all duration-500 cursor-pointer hover:opacity-85`}
+                                className={`${b.color} h-full transition-all duration-300 cursor-pointer hover:opacity-80`}
                                 style={{ width: `${Math.max(b.percent, 1)}%` }}
                                 onClick={() =>
                                     b.isFilterable
                                         ? navigate(`/admin/properties?bank=${encodeURIComponent(b.name)}`)
                                         : setShowAllBanks(true)
                                 }
-                                title={`${b.name}: ${b.count} notices (${b.percent}%) • ${formatCompactINR(b.totalValuation)}`}
+                                title={`${b.name}: ${b.count} notices (${b.percent}%)`}
                             />
                         ))}
                     </div>
 
-                    {/* Bank Listing Bars with Click-To-Filter */}
-                    <div className="space-y-2 pt-1">
+                    <div className="divide-y divide-zinc-100">
                         {formattedBanks.map((b, idx) => (
                             <div
                                 key={idx}
@@ -518,64 +481,42 @@ export function BankShareBarChart({ stats, banksData }) {
                                         ? navigate(`/admin/properties?bank=${encodeURIComponent(b.name)}`)
                                         : setShowAllBanks(true)
                                 }
-                                className="space-y-1 p-2 rounded-xl hover:bg-amber-50/60 transition cursor-pointer group"
-                                title={
-                                    b.isFilterable
-                                        ? `View ${b.name} auction notices`
-                                        : "Click to expand all partner banks"
-                                }
+                                className="py-2.5 flex items-center justify-between gap-4 text-xs hover:bg-zinc-50 px-2 -mx-2 rounded-md transition cursor-pointer group"
                             >
-                                <div className="flex items-center justify-between gap-2 text-xs font-semibold">
-                                    <span className="text-slate-800 flex items-center gap-2 truncate group-hover:text-amber-700 min-w-0">
-                                        <span className={`h-2.5 w-2.5 rounded-full ${b.color} shrink-0`} />
-                                        <span className="truncate">{b.name}</span>
-                                    </span>
-                                    <span className="text-slate-900 font-bold shrink-0 flex items-center gap-2 group-hover:text-amber-700">
-                                        {b.totalValuation > 0 && (
-                                            <span className="text-[11px] font-bold text-emerald-600 hidden sm:inline">
-                                                {formatCompactINR(b.totalValuation)}
-                                            </span>
-                                        )}
-                                        <span>
-                                            {b.count.toLocaleString("en-IN")} ({b.percent}%)
-                                        </span>
-                                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition" />
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className={`h-2 w-2 rounded-xs ${b.color} shrink-0`} />
+                                    <span className="font-medium text-zinc-800 truncate group-hover:text-zinc-950">
+                                        {b.name}
                                     </span>
                                 </div>
-                                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                                    <div
-                                        className={`h-full rounded-full ${b.color}`}
-                                        style={{ width: `${Math.min(100, Math.max(b.percent, 1.5))}%` }}
-                                    />
+                                <div className="flex items-center gap-4 shrink-0 tabular-nums">
+                                    {b.totalValuation > 0 && (
+                                        <span className="text-zinc-500 hidden sm:inline">
+                                            {formatCompactINR(b.totalValuation)}
+                                        </span>
+                                    )}
+                                    <span className="font-semibold text-zinc-900 w-20 text-right">
+                                        {b.count.toLocaleString("en-IN")} ({b.percent}%)
+                                    </span>
+                                    <ArrowRight size={12} className="text-zinc-400 opacity-0 group-hover:opacity-100 transition" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 </>
             )}
-
-            <div className="pt-2 border-t border-slate-100 text-[11px] font-medium text-slate-400 flex flex-wrap items-center justify-between gap-2">
-                <span>💡 Tap any bank row to filter its notices directly</span>
-                <span
-                    className="text-amber-600 font-bold hover:underline cursor-pointer"
-                    onClick={() => navigate("/admin/banks")}
-                >
-                    Manage All {totalBanksCount} Banks →
-                </span>
-            </div>
         </div>
     );
 }
 
 /**
- * 3. Asset Type Distribution Donut / Radial Chart (100% Real MongoDB Data + Dynamic SVG Ring)
+ * 3. Asset Category Distribution
  */
 export function AssetTypeDonutChart({ stats, typesData }) {
     const navigate = useNavigate();
     const rawTypes = stats?.typesBreakdown || typesData || EMPTY_ARRAY;
     const rawSubTypes = stats?.subTypesBreakdown || EMPTY_ARRAY;
 
-    // Default to subTypes if types has only 1 category and subTypes has more variety, while allowing toggle
     const [groupBy, setGroupBy] = useState(() =>
         rawTypes.length <= 1 && rawSubTypes.length > 1 ? "subType" : "type"
     );
@@ -599,7 +540,7 @@ export function AssetTypeDonutChart({ stats, typesData }) {
             });
         }
 
-        const circumference = 2 * Math.PI * 38; // ~238.76
+        const circumference = 2 * Math.PI * 38;
         let accumulatedPercent = 0;
 
         const computed = list.map((item, idx) => {
@@ -630,65 +571,61 @@ export function AssetTypeDonutChart({ stats, typesData }) {
     }, [activeSource]);
 
     return (
-        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs card-hover-effect space-y-4 h-full flex flex-col justify-between">
+        <div className="rounded-xl border border-gray-200/70 bg-white/55 backdrop-blur-md p-5 space-y-4 h-full flex flex-col justify-between">
             <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                        <PieIcon size={18} className="text-amber-500 shrink-0" />
-                        <div>
-                            <h3 className="text-sm sm:text-base font-black text-slate-900">
-                                Asset Category Distribution
-                            </h3>
-                            <p className="text-xs text-slate-400">
-                                Real database breakdown by property classification
-                            </p>
-                        </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-100">
+                    <div>
+                        <h3 className="text-sm font-semibold text-zinc-900">
+                            Asset Classification
+                        </h3>
+                        <p className="text-xs text-zinc-500">
+                            Share by property category
+                        </p>
                     </div>
 
                     {rawSubTypes.length > 0 && (
-                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                        <div className="flex items-center gap-1 bg-zinc-100 p-0.5 rounded-lg">
                             <button
                                 type="button"
                                 onClick={() => setGroupBy("type")}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                                className={`px-2 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
                                     groupBy === "type"
-                                        ? "bg-slate-950 text-amber-400 shadow-2xs"
-                                        : "text-slate-600 hover:text-slate-900"
+                                        ? "bg-white text-zinc-900 shadow-2xs"
+                                        : "text-zinc-600 hover:text-zinc-900"
                                 }`}
                             >
-                                Category ({rawTypes.length})
+                                Type
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setGroupBy("subType")}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                                className={`px-2 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
                                     groupBy === "subType"
-                                        ? "bg-slate-950 text-amber-400 shadow-2xs"
-                                        : "text-slate-600 hover:text-slate-900"
+                                        ? "bg-white text-zinc-900 shadow-2xs"
+                                        : "text-zinc-600 hover:text-zinc-900"
                                 }`}
                             >
-                                Sub-Type ({rawSubTypes.length})
+                                Sub-Type
                             </button>
                         </div>
                     )}
                 </div>
 
                 {slices.length === 0 ? (
-                    <div className="py-12 text-center text-xs text-slate-400">
-                        No property categories found in database.
+                    <div className="py-12 text-center text-xs text-zinc-400">
+                        No property categories found.
                     </div>
                 ) : (
-                    <div className="flex flex-col sm:flex-row items-center justify-around gap-5 sm:gap-6 pt-2">
-                        {/* Dynamic Visual Donut Ring SVG */}
-                        <div className="relative h-32 w-32 sm:h-36 sm:w-36 shrink-0 flex items-center justify-center">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-5 pt-1">
+                        <div className="relative h-32 w-32 shrink-0 flex items-center justify-center">
                             <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
                                 <circle
                                     cx="50"
                                     cy="50"
                                     r="38"
                                     fill="transparent"
-                                    stroke="#f1f5f9"
-                                    strokeWidth="14"
+                                    stroke="#f4f4f5"
+                                    strokeWidth="12"
                                 />
                                 {slices.map((s, idx) => (
                                     <circle
@@ -698,7 +635,7 @@ export function AssetTypeDonutChart({ stats, typesData }) {
                                         r="38"
                                         fill="transparent"
                                         stroke={s.stroke}
-                                        strokeWidth="14"
+                                        strokeWidth="12"
                                         strokeDasharray={s.dashArray}
                                         strokeDashoffset={s.dashOffset}
                                         className="transition-all duration-500"
@@ -707,17 +644,16 @@ export function AssetTypeDonutChart({ stats, typesData }) {
                             </svg>
 
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                <span className="text-lg font-black text-slate-900 leading-none">
+                                <span className="text-base font-semibold text-zinc-900 leading-none tabular-nums">
                                     {total.toLocaleString("en-IN")}
                                 </span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
-                                    Notices
+                                <span className="text-[10px] font-medium text-zinc-400 mt-0.5">
+                                    Total
                                 </span>
                             </div>
                         </div>
 
-                        {/* Legend Pills Grid with Click-To-Filter */}
-                        <div className="grid grid-cols-2 gap-2.5 w-full sm:flex-1">
+                        <div className="w-full sm:flex-1 divide-y divide-zinc-100">
                             {slices.map((t, idx) => (
                                 <div
                                     key={idx}
@@ -729,42 +665,32 @@ export function AssetTypeDonutChart({ stats, typesData }) {
                                             navigate("/admin/properties");
                                         }
                                     }}
-                                    className="p-2.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-300 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
-                                    title={`Filter properties by ${t.label} (${formatCompactINR(t.totalValuation)})`}
+                                    className="py-2 flex items-center justify-between gap-2 text-xs hover:bg-zinc-50 px-2 -mx-2 rounded-md cursor-pointer transition"
                                 >
-                                    <div className="flex items-center gap-1.5">
-                                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${t.colorBg}`} />
-                                        <span className="font-bold text-slate-800 group-hover:text-amber-700 truncate">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className={`h-2 w-2 rounded-xs shrink-0 ${t.colorBg}`} />
+                                        <span className="font-medium text-zinc-800 truncate">
                                             {t.label}
                                         </span>
                                     </div>
-                                    <div className="mt-1 flex items-baseline justify-between gap-1">
-                                        <span className="font-black text-slate-900">
+                                    <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                                        <span className="font-semibold text-zinc-900">
                                             {t.count.toLocaleString("en-IN")}
                                         </span>
-                                        <span className="font-bold text-slate-500 text-[11px]">{t.percent}%</span>
+                                        <span className="text-zinc-400 w-10 text-right">{t.percent}%</span>
                                     </div>
-                                    {t.totalValuation > 0 && (
-                                        <div className="text-[10px] font-semibold text-emerald-600 truncate mt-0.5">
-                                            {formatCompactINR(t.totalValuation)}
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
             </div>
-
-            <div className="pt-2 border-t border-slate-100 text-[11px] font-medium text-slate-400">
-                💡 Tap any category card above to view its filtered properties
-            </div>
         </div>
     );
 }
 
 /**
- * 4. Price Bracket Histogram / Distribution Chart (100% Real MongoDB Data)
+ * 4. Reserve Price Brackets Histogram
  */
 export function PriceBracketHistogramChart({ stats }) {
     const navigate = useNavigate();
@@ -778,11 +704,11 @@ export function PriceBracketHistogramChart({ stats }) {
             }));
         }
         return [
-            { label: "< ₹25L", count: 0, percent: 0, totalValuation: 0, minPrice: 0, maxPrice: 2500000, color: "bg-emerald-500" },
-            { label: "₹25L–50L", count: 0, percent: 0, totalValuation: 0, minPrice: 2500000, maxPrice: 5000000, color: "bg-blue-500" },
-            { label: "₹50L–1Cr", count: 0, percent: 0, totalValuation: 0, minPrice: 5000000, maxPrice: 10000000, color: "bg-amber-500" },
-            { label: "₹1Cr–5Cr", count: 0, percent: 0, totalValuation: 0, minPrice: 10000000, maxPrice: 50000000, color: "bg-purple-500" },
-            { label: "> ₹5 Cr", count: 0, percent: 0, totalValuation: 0, minPrice: 50000000, maxPrice: null, color: "bg-rose-500" }
+            { label: "< ₹25L", count: 0, percent: 0, totalValuation: 0, minPrice: 0, maxPrice: 2500000, color: "bg-zinc-800" },
+            { label: "₹25L–50L", count: 0, percent: 0, totalValuation: 0, minPrice: 2500000, maxPrice: 5000000, color: "bg-zinc-700" },
+            { label: "₹50L–1Cr", count: 0, percent: 0, totalValuation: 0, minPrice: 5000000, maxPrice: 10000000, color: "bg-blue-600" },
+            { label: "₹1Cr–5Cr", count: 0, percent: 0, totalValuation: 0, minPrice: 10000000, maxPrice: 50000000, color: "bg-teal-700" },
+            { label: "> ₹5 Cr", count: 0, percent: 0, totalValuation: 0, minPrice: 50000000, maxPrice: null, color: "bg-zinc-500" }
         ];
     }, [rawBrackets]);
 
@@ -799,26 +725,22 @@ export function PriceBracketHistogramChart({ stats }) {
     };
 
     return (
-        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs card-hover-effect space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                    <BarChart3 size={18} className="text-amber-500 shrink-0" />
-                    <div>
-                        <h3 className="text-sm sm:text-base font-black text-slate-900">
-                            Reserve Price Brackets
-                        </h3>
-                        <p className="text-xs text-slate-400">
-                            Live inventory distribution across {totalPriced.toLocaleString("en-IN")} priced notices
-                        </p>
-                    </div>
+        <div className="rounded-xl border border-gray-200/70 bg-white/55 backdrop-blur-md p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-100">
+                <div>
+                    <h3 className="text-sm font-semibold text-zinc-900">
+                        Reserve Price Distribution
+                    </h3>
+                    <p className="text-xs text-zinc-500">
+                        Across {totalPriced.toLocaleString("en-IN")} priced notices
+                    </p>
                 </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                    {under50LPercent}% Under ₹50L
+                <span className="text-xs font-medium text-zinc-600 bg-zinc-100 px-2.5 py-1 rounded-md tabular-nums">
+                    {under50LPercent}% under ₹50L
                 </span>
             </div>
 
-            {/* Vertical Bar Histogram */}
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-3 pt-4 items-end h-48">
+            <div className="grid grid-cols-5 gap-2 sm:gap-3 pt-3 items-end h-44">
                 {brackets.map((b, idx) => {
                     const heightPct = b.count > 0 ? Math.max(6, Math.round((b.count / maxCount) * 100)) : 0;
 
@@ -827,37 +749,33 @@ export function PriceBracketHistogramChart({ stats }) {
                             key={idx}
                             onClick={() => handleBracketClick(b)}
                             className="flex flex-col items-center justify-end h-full group min-w-0 cursor-pointer"
-                            title={`${b.label}: ${b.count} listings (${b.percent}%) • ${formatCompactINR(b.totalValuation || 0)}`}
+                            title={`${b.label}: ${b.count} listings (${b.percent}%)`}
                         >
-                            <span className="text-[10px] sm:text-xs font-black text-slate-900 group-hover:text-amber-600 transition">
+                            <span className="text-xs font-semibold text-zinc-900 tabular-nums">
                                 {b.count.toLocaleString("en-IN")}
                             </span>
-                            <span className="text-[9px] font-bold text-slate-400 mb-1">
+                            <span className="text-[10px] text-zinc-400 mb-1.5 tabular-nums">
                                 {b.percent}%
                             </span>
-                            <div className="w-full rounded-xl bg-slate-100 group-hover:bg-amber-50/60 overflow-hidden h-32 flex items-end p-1 transition">
+                            <div className="w-full rounded-md bg-zinc-100 group-hover:bg-zinc-200/70 overflow-hidden h-28 flex items-end p-1 transition">
                                 <div
-                                    className={`w-full ${b.color} rounded-lg transition-all duration-500 group-hover:brightness-110 shadow-xs`}
+                                    className={`w-full ${b.color} rounded-xs transition-all duration-300`}
                                     style={{ height: `${heightPct}%` }}
                                 />
                             </div>
-                            <span className="mt-2 text-[9px] sm:text-[10px] font-bold text-slate-700 group-hover:text-amber-700 text-center truncate w-full">
+                            <span className="mt-2 text-[10px] font-medium text-zinc-600 text-center truncate w-full">
                                 {b.label}
                             </span>
                         </div>
                     );
                 })}
             </div>
-
-            <div className="pt-2 border-t border-slate-100 text-[11px] font-medium text-slate-400">
-                💡 Tap any price bracket bar to view listings in that reserve price range
-            </div>
         </div>
     );
 }
 
 /**
- * 5. Real Buyer Inquiry & Lead Conversion Funnel (100% Real MongoDB Inquiry Data)
+ * 5. Buyer Inquiry Pipeline
  */
 export function LeadConversionFunnelChart({ stats }) {
     const navigate = useNavigate();
@@ -877,58 +795,51 @@ export function LeadConversionFunnelChart({ stats }) {
 
     const stages = [
         {
-            label: "1. Total Buyer Leads Captured",
+            label: "Total Inquiries Received",
             count: total,
             pct: total > 0 ? 100 : 0,
-            color: "bg-blue-500",
-            statusFilter: "all"
+            color: "bg-red-600"
         },
         {
-            label: "2. New / Awaiting Response",
+            label: "New / Unread",
             count: newCount,
             pct: getPct(newCount),
-            color: "bg-rose-500",
-            statusFilter: "new"
+            color: "bg-red-500"
         },
         {
-            label: "3. Contacted & In Progress",
+            label: "Contacted / In Follow-Up",
             count: activeFollowUpCount,
             pct: getPct(activeFollowUpCount),
-            color: "bg-amber-500",
-            statusFilter: "contacted"
+            color: "bg-gray-600"
         },
         {
-            label: "4. Converted / Closed Deals",
+            label: "Closed / Resolved",
             count: closedConvertedCount,
             pct: getPct(closedConvertedCount),
-            color: "bg-emerald-500",
-            statusFilter: "closed"
+            color: "bg-gray-800"
         }
     ];
 
     const sourcePills = [
-        { label: "Visitor Sign-Ins", count: Number(byType.visitor_login || 0) },
-        { label: "Auction Inquiries", count: Number(byType.property_inquiry || 0) },
-        { label: "Fresh Property", count: Number(byType.fresh_property || 0) },
-        { label: "Contact Desk", count: Number(byType.contact_message || 0) }
+        { label: "Sign-Ins", count: Number(byType.visitor_login || 0) },
+        { label: "Auction Leads", count: Number(byType.property_inquiry || 0) },
+        { label: "Direct Sale", count: Number(byType.fresh_property || 0) },
+        { label: "General", count: Number(byType.contact_message || 0) }
     ];
 
     return (
-        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs card-hover-effect space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                    <Users size={18} className="text-amber-500 shrink-0" />
-                    <div>
-                        <h3 className="text-sm sm:text-base font-black text-slate-900">
-                            Buyer Leads &amp; CRM Pipeline
-                        </h3>
-                        <p className="text-xs text-slate-400">
-                            Live status breakdown across {total} registered buyer leads
-                        </p>
-                    </div>
+        <div className="rounded-xl border border-gray-200/70 bg-white/55 backdrop-blur-md p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-100">
+                <div>
+                    <h3 className="text-sm font-semibold text-zinc-900">
+                        Inquiry Pipeline
+                    </h3>
+                    <p className="text-xs text-zinc-500">
+                        Status across {total} buyer inquiries
+                    </p>
                 </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                    {responseRate}% Actioned Rate
+                <span className="text-xs font-medium text-zinc-600 bg-zinc-100 px-2.5 py-1 rounded-md tabular-nums">
+                    {responseRate}% actioned
                 </span>
             </div>
 
@@ -937,37 +848,35 @@ export function LeadConversionFunnelChart({ stats }) {
                     <div
                         key={idx}
                         onClick={() => navigate("/admin/inquiries")}
-                        className="space-y-1 cursor-pointer group"
-                        title="Click to open Buyer Leads CRM"
+                        className="space-y-1.5 cursor-pointer group"
                     >
-                        <div className="flex items-center justify-between gap-2 text-xs font-bold">
-                            <span className="text-slate-800 group-hover:text-amber-700 truncate transition">
+                        <div className="flex items-center justify-between gap-2 text-xs">
+                            <span className="font-medium text-zinc-700 group-hover:text-zinc-950 truncate">
                                 {stage.label}
                             </span>
-                            <span className="text-slate-900 shrink-0">
-                                {stage.count} Leads ({stage.pct}%)
+                            <span className="font-semibold text-zinc-900 shrink-0 tabular-nums">
+                                {stage.count} ({stage.pct}%)
                             </span>
                         </div>
-                        <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-2 w-full rounded-xs bg-zinc-100 overflow-hidden">
                             <div
-                                className={`h-full rounded-full ${stage.color} transition-all duration-500`}
-                                style={{ width: `${stage.count > 0 ? Math.max(stage.pct, 4) : 0}%` }}
+                                className={`h-full rounded-xs ${stage.color} transition-all duration-300`}
+                                style={{ width: `${stage.count > 0 ? Math.max(stage.pct, 3) : 0}%` }}
                             />
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Real Lead Source Pills */}
-            <div className="pt-2 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="pt-3 border-t border-zinc-100 grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {sourcePills.map((src, i) => (
                     <div
                         key={i}
                         onClick={() => navigate("/admin/inquiries")}
-                        className="rounded-xl bg-slate-50 border border-slate-100 px-2.5 py-1.5 text-center hover:border-amber-300 cursor-pointer transition"
+                        className="rounded-lg bg-zinc-50 border border-zinc-200/70 px-2.5 py-2 hover:border-zinc-300 cursor-pointer transition"
                     >
-                        <div className="text-xs font-black text-slate-900">{src.count}</div>
-                        <div className="text-[10px] font-semibold text-slate-500 truncate">{src.label}</div>
+                        <div className="text-xs font-semibold text-zinc-900 tabular-nums">{src.count}</div>
+                        <div className="text-[11px] text-zinc-500 truncate">{src.label}</div>
                     </div>
                 ))}
             </div>

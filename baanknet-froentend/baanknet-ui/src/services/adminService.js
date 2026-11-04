@@ -91,16 +91,76 @@ export async function createProperty(propertyData) {
     return result;
 }
 
+function sliceToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const res = String(reader.result || "");
+            const commaIdx = res.indexOf(",");
+            resolve(commaIdx >= 0 ? res.slice(commaIdx + 1) : res);
+        };
+        reader.onerror = () => reject(reader.error || new Error("Failed to read video chunk."));
+        reader.readAsDataURL(blob);
+    });
+}
+
 /**
- * Uploads a property video file (streamed as raw binary) and returns { url, source, size }.
+ * Uploads a property video file in 256 KB chunks (~340 KB base64 JSON payload per chunk)
+ * so reverse proxies (such as Nginx on EC2 with default 1 MB client_max_body_size) never
+ * reject large video uploads with HTTP 413. Falls back to raw binary upload if needed.
  * @param {File} file
  * @param {(percent: number) => void} [onProgress]
  * @param {AbortSignal} [signal]
  */
 export async function uploadPropertyVideo(file, onProgress, signal) {
+    const CHUNK_BYTES = 256 * 1024; // 256 KB raw (~341 KB base64)
+    const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_BYTES));
+    const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+
+    try {
+        for (let i = 0; i < totalChunks; i += 1) {
+            if (signal?.aborted) {
+                const abortErr = new Error("Upload cancelled");
+                abortErr.name = "CanceledError";
+                throw abortErr;
+            }
+            const start = i * CHUNK_BYTES;
+            const end = Math.min(file.size, start + CHUNK_BYTES);
+            const chunkBase64 = await sliceToBase64(file.slice(start, end));
+
+            const res = await api.post(
+                "/uploads/video/chunk",
+                {
+                    uploadId,
+                    chunkIndex: i,
+                    totalChunks,
+                    mimeType: file.type || "video/mp4",
+                    fileName: file.name || "walkthrough.mp4",
+                    chunkBase64
+                },
+                { timeout: 60000, signal }
+            );
+
+            if (onProgress) {
+                onProgress(Math.round(((i + 1) / totalChunks) * 100));
+            }
+            if (res.data?.completed && res.data?.data) {
+                return res.data.data;
+            }
+        }
+    } catch (chunkErr) {
+        if (chunkErr?.name === "CanceledError" || chunkErr?.code === "ERR_CANCELED") {
+            throw chunkErr;
+        }
+        // Fallback to single-shot stream if server does not expose /uploads/video/chunk (HTTP 404)
+        if (chunkErr?.response?.status !== 404) {
+            throw chunkErr;
+        }
+    }
+
     const response = await api.post("/uploads/video", file, {
         headers: { "Content-Type": file.type || "video/mp4" },
-        timeout: 0, // large files can take minutes
+        timeout: 0,
         signal,
         onUploadProgress: (evt) => {
             if (onProgress && evt.total) onProgress(Math.round((evt.loaded / evt.total) * 100));
@@ -125,6 +185,11 @@ export async function updateProperty(id, propertyData) {
 
 export async function togglePropertyStatus(id, isActive) {
     const response = await api.patch(`/properties/${id}/status`, { isActive });
+    return response.data;
+}
+
+export async function togglePropertySold(id, isSold) {
+    const response = await api.patch(`/properties/${id}/sold`, { isSold });
     return response.data;
 }
 

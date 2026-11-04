@@ -22,6 +22,9 @@ const VIDEO_UPLOAD_DIR = path.join(UPLOADS_DIR, "videos");
 const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
 const VIDEO_EXTENSIONS = {
     "video/mp4": ".mp4",
+    "video/x-m4v": ".mp4",
+    "video/mp4v-es": ".mp4",
+    "video/3gpp": ".mp4",
     "video/webm": ".webm",
     "video/ogg": ".ogv",
     "video/quicktime": ".mov"
@@ -205,6 +208,12 @@ const propertySchema = new mongoose.Schema(
         isActive: {
             type: Boolean,
             default: true,
+            index: true
+        },
+
+        isSold: {
+            type: Boolean,
+            default: false,
             index: true
         },
 
@@ -489,8 +498,11 @@ function buildFilterQuery(queryParams) {
 
     if (queryParams.status === "active") {
         query.isActive = true;
+        query.isSold = { $ne: true };
     } else if (queryParams.status === "inactive") {
         query.isActive = false;
+    } else if (queryParams.status === "sold") {
+        query.isSold = true;
     } else if (queryParams.activeOnly !== "false" && queryParams.adminView !== "true") {
         query.isActive = true;
     }
@@ -540,6 +552,7 @@ function buildFilterQuery(queryParams) {
         const bankAliases = {
             sbi: "State Bank of India",
             pnb: "Punjab National Bank",
+            hdfc: "HDFC Bank",
             bob: "Bank of Baroda",
             boi: "Bank of India",
             ubi: "Union Bank of India",
@@ -682,7 +695,7 @@ const requireFreshPropertyAdmin = (req, res, next) => {
     }
     next();
 };
-require("./fresh-properties")(app, mongoose, requireFreshPropertyAdmin);
+require("./fresh-properties")(app, mongoose, requireFreshPropertyAdmin, recordAudit);
 
 // In-Memory Crawler Engine Settings
 let crawlerSettings = {
@@ -692,7 +705,7 @@ let crawlerSettings = {
     concurrencyBatches: 5,
     retryAttempts: 3,
     delayBetweenPagesMs: 800,
-    targetBanks: ["State Bank of India", "Punjab National Bank", "Bank of Baroda", "Canara Bank", "Union Bank of India"],
+    targetBanks: ["State Bank of India", "Punjab National Bank", "HDFC Bank", "Bank of Baroda", "Canara Bank", "Union Bank of India"],
     lastUpdated: new Date()
 };
 
@@ -1048,7 +1061,13 @@ app.get("/api/properties/facets", async (req, res) => {
                 },
                 propertyTypes: typeCounts.map((t) => ({ name: t._id, count: t.count })),
                 propertySubTypes: subTypeCounts.map((st) => ({ name: st._id, count: st.count })),
-                banks: bankCounts.map((b) => ({ name: b._id, count: b.count })),
+                banks: (() => {
+                    const mapped = bankCounts.map((b) => ({ name: b._id, count: b.count }));
+                    if (!mapped.some((b) => b.name && b.name.toLowerCase() === "hdfc bank")) {
+                        mapped.push({ name: "HDFC Bank", count: 0 });
+                    }
+                    return mapped;
+                })(),
                 possessionTypes: possessionCounts.map((p) => ({ name: p._id, count: p.count })),
                 localities: localityCounts.map((l) => ({ name: l._id, count: l.count }))
             }
@@ -1092,6 +1111,10 @@ app.get("/api/properties/stats", async (req, res) => {
             ])
         ]);
 
+        const mergedBanks = Array.from(
+            new Set(["HDFC Bank", ...distinctBanks.filter(Boolean)])
+        ).sort();
+
         res.json({
             success: true,
             data: {
@@ -1099,9 +1122,9 @@ app.get("/api/properties/stats", async (req, res) => {
                 activeListings,
                 totalStates: distinctStates.length,
                 totalCities: distinctCities.length,
-                totalBanks: distinctBanks.length,
+                totalBanks: mergedBanks.length,
                 states: distinctStates.filter(Boolean).sort(),
-                banks: distinctBanks.filter(Boolean).sort(),
+                banks: mergedBanks,
                 pricing: priceAgg[0] || { avgPrice: 0, minPrice: 0, maxPrice: 0 }
             }
         });
@@ -1366,13 +1389,18 @@ app.get("/api/admin/dashboard-stats", async (req, res) => {
             }
         });
 
+        if (!banksAgg.some((b) => b._id && b._id.toLowerCase() === "hdfc bank")) {
+            banksAgg.push({ _id: "HDFC Bank", count: 0, totalValuation: 0 });
+        }
+        const mergedDashboardBanksCount = new Set(["HDFC Bank", ...distinctBanks.filter(Boolean)]).size;
+
         res.json({
             success: true,
             data: {
                 totalProperties,
                 activeListings,
                 inactiveListings,
-                totalBanks: distinctBanks.length,
+                totalBanks: mergedDashboardBanksCount,
                 totalCities: distinctCities.length,
                 totalStates: statesAgg.length,
                 totalInquiries,
@@ -1475,6 +1503,77 @@ app.post("/api/uploads/video", (req, res) => {
     req.pipe(out);
 });
 
+// POST /api/uploads/video/chunk — Chunked base64 video upload (< 500 KB per request)
+// Prevents HTTP 413 (Request Entity Too Large) when running behind Nginx with default 1 MB client_max_body_size
+app.post("/api/uploads/video/chunk", async (req, res) => {
+    try {
+        const { uploadId, chunkIndex, totalChunks, mimeType, fileName: origName, chunkBase64 } = req.body || {};
+        if (!uploadId || !/^[A-Za-z0-9_-]{8,64}$/.test(String(uploadId))) {
+            return res.status(400).json({ success: false, message: "Invalid uploadId." });
+        }
+        const idx = Number(chunkIndex);
+        const total = Number(totalChunks);
+        if (!Number.isInteger(idx) || !Number.isInteger(total) || idx < 0 || total < 1 || idx >= total || total > 800) {
+            return res.status(400).json({ success: false, message: "Invalid chunk index or totalChunks." });
+        }
+        if (typeof chunkBase64 !== "string" || !chunkBase64.length) {
+            return res.status(400).json({ success: false, message: "Missing chunkBase64 payload." });
+        }
+
+        const mime = String(mimeType || "").split(";")[0].trim().toLowerCase();
+        let ext = VIDEO_EXTENSIONS[mime];
+        if (!ext && typeof origName === "string") {
+            const m = origName.toLowerCase().match(/\.(mp4|webm|ogv|ogg|mov|m4v)$/);
+            if (m) ext = m[1] === "ogg" ? ".ogv" : m[1] === "m4v" ? ".mp4" : `.${m[1]}`;
+        }
+        if (!ext) {
+            return res.status(415).json({ success: false, message: "Unsupported video format. Use MP4, WebM, OGG or MOV." });
+        }
+
+        const safeFileName = `${uploadId}${ext}`;
+        const filePath = path.join(VIDEO_UPLOAD_DIR, safeFileName);
+        const buffer = Buffer.from(chunkBase64, "base64");
+
+        if (idx === 0) {
+            await fs.promises.writeFile(filePath, buffer);
+        } else {
+            const stat = await fs.promises.stat(filePath).catch(() => null);
+            if (!stat) {
+                return res.status(400).json({ success: false, message: "Upload session not found for chunk." });
+            }
+            if (stat.size + buffer.length > MAX_VIDEO_BYTES) {
+                await fs.promises.unlink(filePath).catch(() => {});
+                return res.status(413).json({ success: false, message: "Video is larger than 200 MB." });
+            }
+            await fs.promises.appendFile(filePath, buffer);
+        }
+
+        if (idx + 1 === total) {
+            const finalStat = await fs.promises.stat(filePath);
+            return res.status(201).json({
+                success: true,
+                completed: true,
+                data: {
+                    url: `/uploads/videos/${safeFileName}`,
+                    source: "upload",
+                    size: finalStat.size
+                }
+            });
+        }
+
+        return res.json({
+            success: true,
+            completed: false,
+            chunkIndex: idx
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: `Failed to store video chunk: ${err.message}`
+        });
+    }
+});
+
 // POST /api/properties (Create)
 app.post("/api/properties", async (req, res) => {
     try {
@@ -1513,6 +1612,7 @@ app.post("/api/properties", async (req, res) => {
             balconies: data.balconies !== undefined && data.balconies !== "" && !isNaN(Number(data.balconies)) ? Number(data.balconies) : undefined,
             kitchens: data.kitchens !== undefined && data.kitchens !== "" && !isNaN(Number(data.kitchens)) ? Number(data.kitchens) : undefined,
             isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
+            isSold: data.isSold !== undefined ? Boolean(data.isSold) : false,
             createdOn: data.createdOn ? new Date(data.createdOn) : new Date(),
             lastSeenAt: new Date(),
             lastSyncedAt: new Date()
@@ -1631,6 +1731,9 @@ app.put("/api/properties/:id", async (req, res) => {
                 ? updateData.amenities.map((a) => String(a || "").trim()).filter(Boolean)
                 : [];
         }
+        if (updateData.isSold !== undefined) {
+            updateData.isSold = Boolean(updateData.isSold);
+        }
         updateData.lastSeenAt = new Date();
 
         const updated = await Property.findOneAndUpdate(
@@ -1684,23 +1787,79 @@ app.patch("/api/properties/:id/status", async (req, res) => {
             return res.status(404).json({ success: false, message: `Property '${id}' not found` });
         }
 
-        const newStatus = isActive !== undefined ? Boolean(isActive) : !property.isActive;
+        const newStatus = property.isSold
+            ? true
+            : isActive !== undefined
+            ? Boolean(isActive)
+            : !property.isActive;
         property.isActive = newStatus;
+        if (newStatus) {
+            property.isSold = false;
+        }
         await property.save();
 
         await recordAudit("Toggled Listing Visibility", "property", id, property.propertyHeading || property.propertyTitle, {
-            newStatus: newStatus ? "Active" : "Inactive"
+            newStatus: newStatus ? "Active" : "Inactive",
+            isSold: property.isSold
         });
 
         res.json({
             success: true,
-            message: `Property is now ${newStatus ? "Active" : "Inactive"}`,
+            message: `Property is now ${newStatus ? "Active (Available)" : "Inactive"}`,
             isActive: newStatus,
+            isSold: property.isSold,
             data: property
         });
     } catch (error) {
         console.error("PATCH /api/properties/:id/status error:", error);
         res.status(500).json({ success: false, message: "Failed to update property status", error: error.message });
+    }
+});
+
+// PATCH /api/properties/:id/sold
+app.patch("/api/properties/:id/sold", async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { isSold } = req.body;
+
+        const conditions = [
+            { sourcePropertyId: id },
+            { propertyUniqueId: id }
+        ];
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            conditions.push({ _id: id });
+        }
+
+        const property = await Property.findOne({ $or: conditions });
+        if (!property) {
+            return res.status(404).json({ success: false, message: `Property '${id}' not found` });
+        }
+
+        const nextSold = isSold !== undefined ? Boolean(isSold) : !property.isSold;
+        property.isSold = nextSold;
+        if (!nextSold) {
+            property.isActive = true;
+        }
+        await property.save();
+
+        await recordAudit(
+            nextSold ? "Marked Property as SOLD" : "Marked Property as Active (Available)",
+            "property",
+            id,
+            property.propertyHeading || property.propertyTitle,
+            { isSold: nextSold, isActive: property.isActive }
+        );
+
+        res.json({
+            success: true,
+            message: nextSold ? "Property stamped as SOLD OUT" : "Property is now Active (Available)",
+            isSold: nextSold,
+            isActive: property.isActive,
+            data: property
+        });
+    } catch (error) {
+        console.error("PATCH /api/properties/:id/sold error:", error);
+        res.status(500).json({ success: false, message: "Failed to update sold status", error: error.message });
     }
 });
 
@@ -1750,13 +1909,21 @@ app.post("/api/properties/bulk-action", async (req, res) => {
         };
 
         if (action === "activate") {
-            const result = await Property.updateMany(query, { $set: { isActive: true } });
+            const result = await Property.updateMany(query, { $set: { isActive: true, isSold: false } });
             await recordAudit("Bulk Activate Properties", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
-            return res.json({ success: true, message: `Activated ${result.modifiedCount} properties` });
+            return res.json({ success: true, message: `Activated ${result.modifiedCount} properties (marked Available)` });
         } else if (action === "deactivate") {
             const result = await Property.updateMany(query, { $set: { isActive: false } });
             await recordAudit("Bulk Deactivate Properties", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
             return res.json({ success: true, message: `Deactivated ${result.modifiedCount} properties` });
+        } else if (action === "sold") {
+            const result = await Property.updateMany(query, { $set: { isSold: true } });
+            await recordAudit("Bulk Marked Properties as SOLD", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
+            return res.json({ success: true, message: `Stamped ${result.modifiedCount} properties as SOLD` });
+        } else if (action === "unsold") {
+            const result = await Property.updateMany(query, { $set: { isSold: false, isActive: true } });
+            await recordAudit("Bulk Marked Properties as Available", "property", "bulk", `${result.modifiedCount} items`, { count: result.modifiedCount });
+            return res.json({ success: true, message: `Marked ${result.modifiedCount} properties as Active (Available)` });
         } else if (action === "delete") {
             const result = await Property.deleteMany(query);
             await recordAudit("Bulk Delete Properties", "property", "bulk", `${result.deletedCount} items`, { count: result.deletedCount });
@@ -1911,6 +2078,19 @@ app.get("/api/admin/banks", async (req, res) => {
             },
             { $sort: { totalListings: -1 } }
         ]);
+
+        if (!banksAgg.some((b) => b._id && b._id.toLowerCase() === "hdfc bank")) {
+            banksAgg.push({
+                _id: "HDFC Bank",
+                totalListings: 0,
+                activeListings: 0,
+                totalValuation: 0,
+                avgPrice: 0,
+                branches: ["HDFC Bank Retail & Stressed Assets Recovery Branch, Kolkata"],
+                departments: ["SARFAESI Retail & Commercial Asset Recovery Cell"],
+                propertyTypes: ["Residential", "Commercial"]
+            });
+        }
 
         res.json({
             success: true,

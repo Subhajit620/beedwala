@@ -5,8 +5,8 @@ import {
     Download,
     User,
     RefreshCw,
-    Sparkles,
-    LogOut
+    LogOut,
+    PlusCircle
 } from "lucide-react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import { fetchSystemHealth, exportPropertiesData, createInquiry } from "../../services/adminService";
@@ -92,13 +92,13 @@ export default function AdminSettings() {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
+        <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
             {/* Header */}
             <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    System Settings & Diagnostics
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                    System Settings &amp; Diagnostics
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 mt-1">
                     Database status, administrator account credentials, and platform maintenance tools.
                 </p>
             </div>
@@ -108,53 +108,53 @@ export default function AdminSettings() {
                 {/* Left (7 cols): System Health & Data Tools */}
                 <div className="lg:col-span-7 space-y-6">
                     {/* 1. Infrastructure Diagnostics */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs space-y-4">
+                    <div className="rounded-xl border border-gray-200/80 bg-white/55 backdrop-blur-md p-5 sm:p-6 shadow-2xs space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider text-[11px] text-amber-600">
-                                <Server size={16} />
+                            <h3 className="font-semibold flex items-center gap-2 uppercase tracking-wider text-[11px] text-red-600">
+                                <Server size={15} />
                                 <span>Infrastructure Diagnostics</span>
                             </h3>
 
                             <button
                                 onClick={checkHealth}
                                 disabled={loadingHealth}
-                                className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition cursor-pointer"
+                                className="rounded-lg border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition cursor-pointer"
                                 title="Refresh Diagnostics"
                             >
-                                <RefreshCw size={14} className={loadingHealth ? "animate-spin text-amber-600" : ""} />
+                                <RefreshCw size={14} className={loadingHealth ? "animate-spin text-red-600" : ""} />
                             </button>
                         </div>
 
-                        <div className="space-y-3 text-xs">
-                            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                <span className="font-semibold text-slate-700">API Server Operational</span>
-                                <span className="inline-flex items-center gap-1 font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <div className="space-y-2.5 text-xs">
+                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+                                <span className="font-medium text-gray-700">API Server Operational</span>
+                                <span className="inline-flex items-center gap-1.5 font-semibold text-red-700 bg-red-50 border border-red-200/70 px-2.5 py-0.5 rounded-full">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-red-600"></span>
                                     Healthy (Port 5000)
                                 </span>
                             </div>
 
-                            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                <span className="font-semibold text-slate-700">MongoDB Atlas Cluster</span>
+                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+                                <span className="font-medium text-gray-700">MongoDB Atlas Cluster</span>
                                 <span
-                                    className={`inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full ${
+                                    className={`inline-flex items-center gap-1.5 font-semibold px-2.5 py-0.5 rounded-full border ${
                                         health?.database === "connected"
-                                            ? "text-emerald-600 bg-emerald-50"
-                                            : "text-amber-700 bg-amber-50"
+                                            ? "text-gray-800 bg-gray-200 border-gray-300"
+                                            : "text-red-700 bg-red-50 border-red-200/70"
                                     }`}
                                 >
                                     <span
                                         className={`h-1.5 w-1.5 rounded-full ${
-                                            health?.database === "connected" ? "bg-emerald-500" : "bg-amber-500"
+                                            health?.database === "connected" ? "bg-gray-700" : "bg-red-500"
                                         }`}
                                     ></span>
                                     {health?.database === "connected" ? "Connected (Atlas Sharded)" : "Active"}
                                 </span>
                             </div>
 
-                            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                <span className="font-semibold text-slate-700">Server Uptime</span>
-                                <span className="font-mono font-bold text-slate-800">
+                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+                                <span className="font-medium text-gray-700">Server Uptime</span>
+                                <span className="font-mono font-semibold text-gray-800">
                                     {health?.uptimeSeconds ? `${Math.floor(health.uptimeSeconds / 60)} min ${health.uptimeSeconds % 60} sec` : "Active"}
                                 </span>
                             </div>
@@ -162,42 +162,42 @@ export default function AdminSettings() {
                     </div>
 
                     {/* 2. Database & Backup Tools */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs space-y-4">
-                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider text-[11px] text-amber-600">
-                            <Database size={16} />
-                            <span>Data Management & Backup Tools</span>
+                    <div className="rounded-xl border border-gray-200/80 bg-white/55 backdrop-blur-md p-5 sm:p-6 shadow-2xs space-y-4">
+                        <h3 className="font-semibold flex items-center gap-2 uppercase tracking-wider text-[11px] text-red-600">
+                            <Database size={15} />
+                            <span>Data Management &amp; Backup Tools</span>
                         </h3>
 
-                        <p className="text-xs text-slate-500 leading-relaxed">
+                        <p className="text-xs text-gray-500 leading-relaxed">
                             Generate complete snapshots of all indexed bank auction listings, borrower details, and valuation data.
                         </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <button
                                 onClick={() => handleExport("csv")}
-                                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 py-3 text-xs font-bold text-slate-800 transition cursor-pointer active:scale-95"
+                                className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 py-2.5 text-xs font-semibold text-gray-800 transition cursor-pointer"
                             >
-                                <Download size={15} />
+                                <Download size={14} />
                                 <span>Export All Listings (CSV)</span>
                             </button>
 
                             <button
                                 onClick={() => handleExport("json")}
-                                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 py-3 text-xs font-bold text-slate-800 transition cursor-pointer active:scale-95"
+                                className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 py-2.5 text-xs font-semibold text-gray-800 transition cursor-pointer"
                             >
-                                <Download size={15} />
+                                <Download size={14} />
                                 <span>Export Full Backup (JSON)</span>
                             </button>
                         </div>
 
                         {/* Seed Sample Leads */}
-                        <div className="pt-3 border-t border-slate-100">
+                        <div className="pt-3 border-t border-gray-100">
                             <button
                                 onClick={handleSeedSampleLeads}
                                 disabled={seedingLeads}
-                                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-amber-50 border border-amber-300 hover:bg-amber-100 py-3 text-xs font-bold text-amber-900 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-50/80 border border-red-200 hover:bg-red-100/80 py-2.5 text-xs font-semibold text-red-700 transition cursor-pointer disabled:opacity-50"
                             >
-                                <Sparkles size={15} className="text-amber-600" />
+                                <PlusCircle size={14} className="text-red-600" />
                                 <span>{seedingLeads ? "Seeding..." : "Seed Sample Demo Leads for CRM Testing"}</span>
                             </button>
                         </div>
@@ -207,24 +207,24 @@ export default function AdminSettings() {
                 {/* Right (5 cols): Admin Account Profile & Session */}
                 <div className="lg:col-span-5 space-y-6">
                     {/* Admin Profile Card */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs space-y-5">
-                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider text-[11px] text-amber-600">
-                            <User size={16} />
+                    <div className="rounded-xl border border-gray-200/80 bg-white/55 backdrop-blur-md p-5 sm:p-6 shadow-2xs space-y-5">
+                        <h3 className="font-semibold flex items-center gap-2 uppercase tracking-wider text-[11px] text-red-600">
+                            <User size={15} />
                             <span>Administrator Profile</span>
                         </h3>
 
-                        <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-slate-950 text-white">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 font-black text-lg">
+                        <div className="flex items-center gap-3.5 p-4 rounded-xl bg-gradient-to-br from-red-50/70 via-white to-gray-50 border border-red-200/70 text-gray-900">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-600 text-white font-bold text-base shrink-0">
                                 {adminUser?.name ? adminUser.name.charAt(0).toUpperCase() : "A"}
                             </div>
-                            <div>
-                                <span className="block font-black text-sm text-white">
+                            <div className="min-w-0">
+                                <span className="block font-bold text-sm text-gray-900 truncate">
                                     {adminUser?.name || "System Administrator"}
                                 </span>
-                                <span className="block text-[11px] text-slate-400">
+                                <span className="block text-[11px] text-gray-500 truncate">
                                     {adminUser?.email || "admin@bidwallah.com"}
                                 </span>
-                                <span className="inline-block mt-1 text-[10px] font-black uppercase text-amber-400 bg-amber-500/20 px-2 py-0.2 rounded-md">
+                                <span className="inline-block mt-1 text-[10px] font-semibold uppercase text-red-700 bg-red-100/80 px-2 py-0.5 rounded-md">
                                     Super Admin
                                 </span>
                             </div>
@@ -233,15 +233,15 @@ export default function AdminSettings() {
                         <div className="space-y-3 text-xs">
                             <div className="flex items-center justify-between py-2 border-b border-slate-100">
                                 <span className="text-slate-500">Security Clearance</span>
-                                <span className="font-bold text-slate-900">Level 1 Full Access</span>
+                                <span className="font-semibold text-slate-900">Level 1 Full Access</span>
                             </div>
                             <div className="flex items-center justify-between py-2 border-b border-slate-100">
                                 <span className="text-slate-500">Authentication Mode</span>
-                                <span className="font-bold text-slate-900">Bearer Token JWT</span>
+                                <span className="font-semibold text-slate-900">Bearer Token JWT</span>
                             </div>
                             <div className="flex items-center justify-between py-2 border-b border-slate-100">
                                 <span className="text-slate-500">SARFAESI Access</span>
-                                <span className="font-bold text-emerald-600">Unrestricted</span>
+                                <span className="font-semibold text-emerald-600">Unrestricted</span>
                             </div>
                         </div>
 
@@ -249,9 +249,9 @@ export default function AdminSettings() {
                         <div className="pt-2">
                             <button
                                 onClick={logout}
-                                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-rose-50 border border-rose-200 hover:bg-rose-100 py-3 text-xs font-bold text-rose-700 transition cursor-pointer active:scale-95"
+                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-rose-50 border border-rose-200 hover:bg-rose-100 py-2.5 text-xs font-semibold text-rose-700 transition cursor-pointer"
                             >
-                                <LogOut size={15} />
+                                <LogOut size={14} />
                                 <span>Sign Out Administrator Session</span>
                             </button>
                         </div>

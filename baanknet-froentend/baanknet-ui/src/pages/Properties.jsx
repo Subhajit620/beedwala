@@ -9,10 +9,10 @@ import {
     ChevronsRight,
     LayoutGrid,
     List,
-    Compass,
     Share2,
     Check
 } from "lucide-react";
+import { PropertyFinderIcon } from "../components/BrandIcons";
 
 import {
     fetchProperties,
@@ -343,7 +343,7 @@ export default function Properties() {
                                     : "text-slate-500 hover:text-slate-900"
                             }`}
                         >
-                            <Compass size={14} />
+                            <PropertyFinderIcon size={14} />
                             <span>Hubs & Map</span>
                         </button>
                     </div>

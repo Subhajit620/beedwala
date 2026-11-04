@@ -104,7 +104,7 @@ export default function InquiryModal({ property, isOpen, onClose }) {
                         </div>
                         <div className="min-w-0">
                             <h3 className="text-sm sm:text-base font-black text-white truncate">
-                                Request Free Callback &amp; Property Details
+                                Call {property.contactPhone || "+91 74394 09340"} &amp; Property Details
                             </h3>
                             <p className="text-[11px] text-amber-400 font-semibold truncate">
                                 Asset ID: <span className="font-mono">{propertyId}</span>
@@ -240,10 +240,19 @@ export default function InquiryModal({ property, isOpen, onClose }) {
                                 </div>
                             </div>
 
-                            {/* Trust Notice */}
-                            <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                                <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
-                                <span>0% Brokerage • Direct callback &amp; WhatsApp details from Bidwallah Desk.</span>
+                            {/* Trust Notice & Direct Phone */}
+                            <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-2 text-[11px] text-emerald-900">
+                                <span className="flex items-center gap-1.5 font-semibold">
+                                    <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
+                                    <span>Direct Helpline:</span>
+                                </span>
+                                <a
+                                    href={`tel:${String(property.contactPhone || "7439409340").replace(/\s+/g, "")}`}
+                                    className="inline-flex items-center gap-1 font-black text-emerald-700 hover:underline"
+                                >
+                                    <Phone size={12} />
+                                    <span>{property.contactPhone || "+91 74394 09340"}</span>
+                                </a>
                             </div>
 
                             {/* Submit Button */}
@@ -258,7 +267,7 @@ export default function InquiryModal({ property, isOpen, onClose }) {
                                     ) : (
                                         <>
                                             <Send size={14} />
-                                            <span>Get Instant Callback &amp; Details</span>
+                                            <span>Send Inquiry &amp; Get Details</span>
                                         </>
                                     )}
                                 </button>
